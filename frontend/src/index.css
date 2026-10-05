@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-sand-50 text-charcoal font-sans antialiased;
+    min-height: 100vh;
+  }
+}

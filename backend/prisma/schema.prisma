@@ -1,0 +1,136 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CLIENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDIENTE_PAGO
+  PENDIENTE_VALIDACION
+  CONFIRMADA
+  CANCELADA_CLIENTE
+  RECHAZADA_ADMIN
+  FINALIZADA
+}
+
+enum PaymentMethod {
+  GATEWAY
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(150)
+  email        String   @unique @db.VarChar(150)
+  phone        String   @db.VarChar(30)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         Role     @default(CLIENT)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  bookings        Booking[]
+  taughtSchedules ClassSchedule[] @relation("InstructorSchedules")
+  auditedPayments Payment[]       @relation("AdminVerifiedPayments")
+
+  @@map("users")
+}
+
+model ClassType {
+  id              String   @id @default(uuid())
+  title           String   @db.VarChar(100)
+  description     String?  @db.Text
+  defaultCapacity Int      @default(8) @map("default_capacity")
+  defaultPrice    Decimal  @map("default_price") @db.Decimal(10, 2)
+  durationMinutes Int      @default(60) @map("duration_minutes")
+  intensityLevel  String   @default("Todos los niveles") @map("intensity_level") @db.VarChar(50)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  schedules ClassSchedule[]
+
+  @@map("class_types")
+}
+
+model ClassSchedule {
+  id             String         @id @default(uuid())
+  classTypeId    String         @map("class_type_id")
+  instructorId   String?        @map("instructor_id")
+  startTime      DateTime       @map("start_time")
+  endTime        DateTime       @map("end_time")
+  capacity       Int            @default(8)
+  availableSlots Int            @map("available_slots")
+  price          Decimal        @db.Decimal(10, 2)
+  status         ScheduleStatus @default(SCHEDULED)
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  classType  ClassType @relation(fields: [classTypeId], references: [id])
+  instructor User?     @relation("InstructorSchedules", fields: [instructorId], references: [id])
+  bookings   Booking[]
+
+  @@index([startTime, status])
+  @@map("class_schedules")
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  scheduleId      String        @map("schedule_id")
+  bookingCode     String        @unique @map("booking_code") @db.VarChar(20)
+  status          BookingStatus @default(PENDIENTE_PAGO)
+  paymentMethod   PaymentMethod @map("payment_method")
+  voucherUrl      String?       @map("voucher_url") @db.Text
+  rejectionReason String?       @map("rejection_reason") @db.Text
+  expiresAt       DateTime?     @map("expires_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id])
+  schedule ClassSchedule @relation(fields: [scheduleId], references: [id])
+  payment  Payment?
+
+  @@index([userId, status])
+  @@index([scheduleId])
+  @@map("bookings")
+}
+
+model Payment {
+  id                   String        @id @default(uuid())
+  bookingId            String        @unique @map("booking_id")
+  amount               Decimal       @db.Decimal(10, 2)
+  currency             String        @default("CLP") @db.VarChar(10)
+  status               PaymentStatus @default(PENDING)
+  gatewayProvider      String        @map("gateway_provider") @db.VarChar(50)
+  gatewayTransactionId String?       @map("gateway_transaction_id") @db.VarChar(100)
+  verifiedByAdminId    String?       @map("verified_by_admin_id")
+  verifiedAt           DateTime?     @map("verified_at")
+  rawWebhookPayload    Json?         @map("raw_webhook_payload")
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  booking         Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  verifiedByAdmin User?   @relation("AdminVerifiedPayments", fields: [verifiedByAdminId], references: [id])
+
+  @@map("payments")
+}
