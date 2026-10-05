@@ -19,6 +19,7 @@
 | Cancelar clases masivamente y notificar | ❌ | ❌ | ❌ | ✅ |
 | Dashboard con métricas de ocupación e ingresos | ❌ | ❌ | ❌ | ✅ |
 | Gestión de usuarios y asignación de roles | ❌ | ❌ | ❌ | ✅ |
+| Impartir clases como Instructor (Admin Instructor) | ❌ | ❌ | ✅ | ✅ (mediante selector o flag `isInstructor`) |
 
 ---
 
@@ -79,9 +80,11 @@
 ### 2.4. Módulo de Gestión de Clases y Horarios (Admin)
 - **Definición de Clases:** Nombre, descripción, intensidad, capacidad por defecto (ej. 8 alumnos), tarifa individual y paquetes.
 - **Planificador de Calendario:**
-  - Generación de horarios individuales.
-  - Generación recurrente (ej: "Crear clase de Reformer los Lunes y Miércoles a las 09:00 AM durante los próximos 3 meses").
-  - Asignación de instructor titular y sala/reformer.
+  - Generación de horarios individuales y recurrentes.
+  - Asignación de instructor titular:
+    - **Selector Inteligente:** Permite asignar tanto a instructores del equipo como al propio Administrador mediante un toggle rápido *"Asignarme a mí mismo como instructor"* o selección en lista desplegable.
+    - Los administradores con perfil activo de instructor pueden impartir clases y visualizar su propia agenda de sesiones.
+  - Asignación de sala y cantidad de reformers/camas.
 - **Cancelación o Reprogramación por parte del Estudio:**
   - Si un instructor enferma o hay un imprevisto técnico, el administrador puede cancelar la sesión.
   - El sistema cancela las reservas asociadas, libera a los alumnos y envía un aviso de emergencia masivo por correo y WhatsApp.

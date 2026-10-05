@@ -179,3 +179,33 @@ El diseño visual para un estudio de pilates debe transmitir **calma, bienestar,
 |  [ Cancelar ]                                   [ Confirmar Rechazo ]    |
 +--------------------------------------------------------------------------+
 ```
+
+---
+
+### 3.5. Modal: Programar Clase con Selector de Instructor (Admin como Instructor)
+
+```
++--------------------------------------------------------------------------+
+|  PROGRAMAR NUEVA SESIÓN / HORARIO                                  [ X ] |
++--------------------------------------------------------------------------+
+|  Tipo de Clase: [ Pilates Reformer Fundamentals                     v ]  |
+|  Fecha: [ 14 / 10 / 2026 ]   Hora Inicio: [ 09:00 AM ]  Duración: 60 min |
+|  Cupos / Aforo: [ 8 ] camas reformer                                     |
+|  Tarifa por Alumno: [ $18.000 CLP ]                                      |
+|                                                                          |
+|  -- ASIGNACIÓN DE INSTRUCTOR --                                          |
+|  [X] Impartiré yo esta clase (Marcarme como instructor titular)          |
+|                                                                          |
+|  O bien, selecciona un instructor del equipo:                            |
+|  +--------------------------------------------------------------------+  |
+|  | [ Yo mismo: Matías Gómez (Administrador / Instructor)            v ] |
+|  |   Camila Silva (Instructora Certificada Reformer)                  |  |
+|  |   Valentina Vega (Instructora Power Pilates)                       |  |
+|  |   Lucas Arancibia (Instructor Mat & Cadillac)                      |  |
+|  +--------------------------------------------------------------------+  |
+|                                                                          |
+|  [ ] Repetir semanalmente (Lunes y Miércoles por 4 semanas)             |
+|                                                                          |
+|  [ Cancelar ]                                       [ Publicar Clase ]   |
++--------------------------------------------------------------------------+
+```

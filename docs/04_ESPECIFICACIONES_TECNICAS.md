@@ -34,6 +34,7 @@ erDiagram
         VARCHAR phone
         VARCHAR password_hash
         ENUM role "CLIENT, INSTRUCTOR, ADMIN"
+        BOOLEAN is_instructor
         BOOLEAN is_active
         TIMESTAMP created_at
         TIMESTAMP updated_at
@@ -147,6 +148,7 @@ model User {
   phone         String          @db.VarChar(30)
   passwordHash  String          @map("password_hash") @db.VarChar(255)
   role          Role            @default(CLIENT)
+  isInstructor  Boolean         @default(false) @map("is_instructor")
   isActive      Boolean         @default(true) @map("is_active")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
