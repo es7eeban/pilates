@@ -3,6 +3,7 @@ import { Calendar, CheckCircle2, Clock, Sparkles, UserCheck, ShieldCheck, ArrowR
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
+import { ScheduleCatalog } from './components/ScheduleCatalog';
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth();
@@ -99,7 +100,7 @@ function MainContent() {
         </div>
 
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-12">
           <div className="p-6 rounded-2xl bg-white border border-sand-200 shadow-sm hover:shadow-md transition">
             <div className="w-10 h-10 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center mb-4">
               <Calendar className="w-5 h-5" />
@@ -124,6 +125,14 @@ function MainContent() {
             <p className="text-sm text-charcoal-muted">Panel administrativo para validación inmediata de reservas con comprobantes.</p>
           </div>
         </div>
+
+        {/* Live Schedules / Class Catalog */}
+        <ScheduleCatalog
+          onRequestLogin={() => handleOpenAuth('login')}
+          onSelectSchedule={(sched) => {
+            alert(`Has seleccionado la clase: ${sched.classType.title}. El módulo de reservas y pagos se completará en el siguiente Sprint.`);
+          }}
+        />
       </main>
 
       {/* Footer */}

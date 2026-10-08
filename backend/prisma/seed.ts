@@ -99,6 +99,114 @@ async function main() {
     }
   }
 
+  // 5. Sesiones de clase programadas para los próximos 7 días
+  const allClassTypes = await prisma.classType.findMany({ where: { isActive: true } });
+  const reformerEsencial = allClassTypes.find((c) => c.title.includes('Esencial')) ?? allClassTypes[0];
+  const reformerDinamico = allClassTypes.find((c) => c.title.includes('Dinámico')) ?? allClassTypes[1];
+  const matFlow = allClassTypes.find((c) => c.title.includes('Mat')) ?? allClassTypes[2];
+
+  const now = new Date();
+  const baseDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const plannedSchedules = [
+    // Mañana
+    {
+      classTypeId: reformerEsencial.id,
+      instructorId: instructor.id,
+      dayOffset: 1,
+      startHour: 9,
+      startMin: 0,
+      duration: 55,
+      capacity: 8,
+    },
+    {
+      classTypeId: matFlow.id,
+      instructorId: admin.id,
+      dayOffset: 1,
+      startHour: 10,
+      startMin: 30,
+      duration: 60,
+      capacity: 12,
+    },
+    {
+      classTypeId: reformerDinamico.id,
+      instructorId: instructor.id,
+      dayOffset: 1,
+      startHour: 18,
+      startMin: 0,
+      duration: 55,
+      capacity: 8,
+    },
+    // Pasado mañana
+    {
+      classTypeId: reformerEsencial.id,
+      instructorId: admin.id,
+      dayOffset: 2,
+      startHour: 8,
+      startMin: 30,
+      duration: 55,
+      capacity: 8,
+    },
+    {
+      classTypeId: reformerDinamico.id,
+      instructorId: instructor.id,
+      dayOffset: 2,
+      startHour: 19,
+      startMin: 0,
+      duration: 55,
+      capacity: 8,
+    },
+    // En 3 días
+    {
+      classTypeId: matFlow.id,
+      instructorId: instructor.id,
+      dayOffset: 3,
+      startHour: 9,
+      startMin: 0,
+      duration: 60,
+      capacity: 12,
+    },
+    {
+      classTypeId: reformerEsencial.id,
+      instructorId: instructor.id,
+      dayOffset: 3,
+      startHour: 18,
+      startMin: 30,
+      duration: 55,
+      capacity: 8,
+    },
+  ];
+
+  for (const s of plannedSchedules) {
+    const startTime = new Date(baseDay);
+    startTime.setDate(startTime.getDate() + s.dayOffset);
+    startTime.setHours(s.startHour, s.startMin, 0, 0);
+
+    const endTime = new Date(startTime.getTime() + s.duration * 60 * 1000);
+
+    const existingSchedule = await prisma.classSchedule.findFirst({
+      where: {
+        classTypeId: s.classTypeId,
+        startTime,
+      },
+    });
+
+    if (!existingSchedule) {
+      await prisma.classSchedule.create({
+        data: {
+          classTypeId: s.classTypeId,
+          instructorId: s.instructorId,
+          startTime,
+          endTime,
+          capacity: s.capacity,
+          availableSlots: s.capacity,
+          price: 15000,
+        },
+      });
+      console.log(`✅ Sesión programada para: ${startTime.toISOString()} (${s.duration} min)`);
+    }
+  }
+
   console.log('✨ Seeder ejecutado con éxito.');
 }
 

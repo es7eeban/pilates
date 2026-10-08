@@ -57,3 +57,31 @@ export const authApi = {
     return handleResponse<User>(res);
   },
 };
+
+export const classTypesApi = {
+  async getAll(): Promise<import('../types/schedule').ClassType[]> {
+    const res = await fetch(`${API_BASE_URL}/class-types`);
+    return handleResponse(res);
+  },
+};
+
+export const schedulesApi = {
+  async getAll(params?: import('../types/schedule').QuerySchedulesParams): Promise<import('../types/schedule').ClassSchedule[]> {
+    const query = new URLSearchParams();
+    if (params?.dateFrom) query.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) query.append('dateTo', params.dateTo);
+    if (params?.classTypeId) query.append('classTypeId', params.classTypeId);
+    if (params?.instructorId) query.append('instructorId', params.instructorId);
+    if (params?.onlyAvailable) query.append('onlyAvailable', 'true');
+
+    const queryString = query.toString();
+    const url = `${API_BASE_URL}/schedules${queryString ? `?${queryString}` : ''}`;
+    const res = await fetch(url);
+    return handleResponse(res);
+  },
+
+  async getById(id: string): Promise<import('../types/schedule').ClassSchedule> {
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}`);
+    return handleResponse(res);
+  },
+};

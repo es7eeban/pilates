@@ -23,8 +23,30 @@ async function bootstrap() {
     credentials: true,
   });
 
+  const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Pilates Booking System API')
+    .setDescription('API REST para agendamiento de clases de pilates, control de cupos y pagos.')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        description: 'Ingresa tu JWT access token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup(`${prefix}/docs`, app, document);
+
   await app.listen(port);
   console.log(`🚀 Pilates Backend running at http://localhost:${port}/${prefix}`);
+  console.log(`📚 Swagger documentation at http://localhost:${port}/${prefix}/docs`);
 }
 
 await bootstrap();
