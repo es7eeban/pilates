@@ -8,6 +8,7 @@
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",
     "db:push": "npm run --prefix backend prisma:push",
+    "db:seed": "npm run --prefix backend db:seed",
     "db:studio": "npm run --prefix backend prisma:studio",
     "backend:dev": "npm run --prefix backend start:dev",
     "backend:build": "npm run --prefix backend build",
