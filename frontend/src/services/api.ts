@@ -206,3 +206,91 @@ export const bookingsApi = {
     return handleResponse<import('../types/schedule').Booking>(res);
   },
 };
+
+export const attendanceApi = {
+  async getMyClasses(params?: import('../types/attendance').QueryAttendanceParams): Promise<import('../types/attendance').InstructorClassSchedule[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const query = new URLSearchParams();
+    if (params?.date) query.append('date', params.date);
+    if (params?.branchId) query.append('branchId', params.branchId);
+    if (params?.status) query.append('status', params.status);
+    if (params?.all) query.append('all', 'true');
+
+    const queryString = query.toString();
+    const url = `${API_BASE_URL}/attendance/my-classes${queryString ? `?${queryString}` : ''}`;
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/attendance').InstructorClassSchedule[]>(res);
+  },
+
+  async getClassRoster(scheduleId: string): Promise<import('../types/attendance').ClassRosterResponse> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/roster`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/attendance').ClassRosterResponse>(res);
+  },
+
+  async updateAttendance(
+    bookingId: string,
+    payload: import('../types/attendance').UpdateAttendancePayload,
+  ): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/attendance/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  async bulkAttendance(
+    scheduleId: string,
+    attendees: import('../types/attendance').BulkAttendanceItem[],
+  ): Promise<import('../types/attendance').ClassRosterResponse> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ attendees }),
+    });
+    return handleResponse<import('../types/attendance').ClassRosterResponse>(res);
+  },
+
+  async updateScheduleStatus(
+    scheduleId: string,
+    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
+  ): Promise<import('../types/schedule').ClassSchedule> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+    return handleResponse<import('../types/schedule').ClassSchedule>(res);
+  },
+};

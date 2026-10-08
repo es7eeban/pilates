@@ -29,6 +29,8 @@ export interface Instructor {
   isInstructor: boolean;
 }
 
+export type ScheduleStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
 export interface ClassSchedule {
   id: string;
   classTypeId: string;
@@ -39,7 +41,7 @@ export interface ClassSchedule {
   capacity: number;
   availableSlots: number;
   price: number | string;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: ScheduleStatus;
   classType: ClassType;
   branch?: Branch;
   instructor?: Instructor;
@@ -54,6 +56,8 @@ export interface QuerySchedulesParams {
   onlyAvailable?: boolean;
 }
 
+export type AttendanceStatus = 'PENDING' | 'ATTENDED' | 'NO_SHOW' | 'EXCUSED';
+
 export interface Booking {
   id: string;
   userId?: string;
@@ -63,6 +67,9 @@ export interface Booking {
   paymentMethod: 'GATEWAY' | 'TRANSFER';
   voucherUrl?: string;
   rejectionReason?: string;
+  attendanceStatus?: AttendanceStatus;
+  checkInAt?: string | null;
+  attendanceNotes?: string | null;
   expiresAt?: string;
   createdAt: string;
   schedule: ClassSchedule;

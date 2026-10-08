@@ -7,6 +7,7 @@ import { ScheduleCatalog } from './components/ScheduleCatalog';
 import { BookingModal } from './components/BookingModal';
 import { MyBookingsModal } from './components/MyBookingsModal';
 import { AdminVouchersModal } from './components/AdminVouchersModal';
+import { AttendanceModal } from './components/AttendanceModal';
 import type { ClassSchedule } from './types/schedule';
 
 function MainContent() {
@@ -17,6 +18,7 @@ function MainContent() {
   const [selectedSchedule, setSelectedSchedule] = useState<ClassSchedule | null>(null);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
   const [adminVouchersOpen, setAdminVouchersOpen] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [catalogKey, setCatalogKey] = useState(0);
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
@@ -42,6 +44,7 @@ function MainContent() {
         onOpenAuth={handleOpenAuth}
         onOpenMyBookings={() => setMyBookingsOpen(true)}
         onOpenAdminVouchers={() => setAdminVouchersOpen(true)}
+        onOpenAttendance={() => setAttendanceOpen(true)}
       />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-12 w-full">
@@ -66,7 +69,7 @@ function MainContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setMyBookingsOpen(true)}
                   className="px-3.5 py-1.5 text-xs font-semibold bg-sage-50 text-sage-800 hover:bg-sage-100 border border-sage-200 rounded-xl transition flex items-center gap-1.5"
@@ -74,6 +77,16 @@ function MainContent() {
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>Ver Mis Reservas</span>
                 </button>
+
+                {(user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || user.isInstructor) && (
+                  <button
+                    onClick={() => setAttendanceOpen(true)}
+                    className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white border border-emerald-300 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>📋</span>
+                    <span>Asistencia & Clases</span>
+                  </button>
+                )}
 
                 {user.role === 'ADMIN' && (
                   <button
@@ -208,6 +221,14 @@ function MainContent() {
         isOpen={adminVouchersOpen}
         onClose={() => setAdminVouchersOpen(false)}
         onUpdated={handleRefreshSchedule}
+      />
+
+      <AttendanceModal
+        isOpen={attendanceOpen}
+        onClose={() => {
+          setAttendanceOpen(false);
+          handleRefreshSchedule();
+        }}
       />
     </div>
   );

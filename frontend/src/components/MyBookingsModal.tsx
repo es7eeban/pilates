@@ -158,7 +158,33 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                     <span className="font-mono text-xs font-bold text-sage-800 bg-sage-100/60 px-2.5 py-1 rounded-lg">
                       {b.bookingCode}
                     </span>
-                    <div>{getStatusBadge(b.status)}</div>
+                    <div className="flex items-center gap-1.5">
+                      {(b.status === 'CONFIRMADA' || b.status === 'FINALIZADA') && (
+                        <>
+                          {b.attendanceStatus === 'ATTENDED' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✅ Presente
+                            </span>
+                          )}
+                          {b.attendanceStatus === 'NO_SHOW' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                              ❌ Ausente
+                            </span>
+                          )}
+                          {b.attendanceStatus === 'EXCUSED' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                              🟡 Justificada
+                            </span>
+                          )}
+                          {(!b.attendanceStatus || b.attendanceStatus === 'PENDING') && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-stone-100 text-stone-600">
+                              ⏳ En sala
+                            </span>
+                          )}
+                        </>
+                      )}
+                      {getStatusBadge(b.status)}
+                    </div>
                   </div>
 
                   <div>

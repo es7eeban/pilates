@@ -9,6 +9,7 @@ import { ClassTypesModule } from './class-types/class-types.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
+import { AttendanceModule } from './attendance/attendance.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BookingsModule } from './bookings/bookings.module.js';
     SchedulesModule,
     BranchesModule,
     BookingsModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

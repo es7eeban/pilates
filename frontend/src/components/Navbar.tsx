@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, User as UserIcon, Shield, Sparkles, BookOpen, FileCheck } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Sparkles, BookOpen, FileCheck, ClipboardList } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
 
@@ -7,12 +7,14 @@ interface NavbarProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
   onOpenMyBookings: () => void;
   onOpenAdminVouchers: () => void;
+  onOpenAttendance: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenMyBookings,
   onOpenAdminVouchers,
+  onOpenAttendance,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -66,6 +68,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <BookOpen className="w-3.5 h-3.5 text-sage-600" />
                 <span className="hidden sm:inline">Mis Reservas</span>
               </button>
+
+              {(user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || user.isInstructor) && (
+                <button
+                  onClick={onOpenAttendance}
+                  className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white border border-emerald-300 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Asistencia & Clases</span>
+                </button>
+              )}
 
               {user.role === 'ADMIN' && (
                 <button

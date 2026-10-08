@@ -29,6 +29,13 @@ enum BookingStatus {
   FINALIZADA
 }
 
+enum AttendanceStatus {
+  PENDING
+  ATTENDED
+  NO_SHOW
+  EXCUSED
+}
+
 enum PaymentMethod {
   GATEWAY
   TRANSFER
@@ -126,11 +133,14 @@ model Booking {
   bookingCode     String        @unique @map("booking_code") @db.VarChar(20)
   status          BookingStatus @default(PENDIENTE_PAGO)
   paymentMethod   PaymentMethod @map("payment_method")
-  voucherUrl      String?       @map("voucher_url") @db.Text
-  rejectionReason String?       @map("rejection_reason") @db.Text
-  expiresAt       DateTime?     @map("expires_at")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  voucherUrl      String?          @map("voucher_url") @db.Text
+  rejectionReason String?          @map("rejection_reason") @db.Text
+  attendanceStatus AttendanceStatus @default(PENDING) @map("attendance_status")
+  checkInAt        DateTime?        @map("check_in_at")
+  attendanceNotes  String?          @map("attendance_notes") @db.Text
+  expiresAt       DateTime?        @map("expires_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
   user     User          @relation(fields: [userId], references: [id])
   schedule ClassSchedule @relation(fields: [scheduleId], references: [id])

@@ -287,6 +287,75 @@ async function main() {
     }
   }
 
+  // 6. Alumno adicional y Reservas de prueba para probar la nómina / lista de asistencia
+  const alumno2 = await prisma.user.upsert({
+    where: { email: 'maria.rojas@pilates.cl' },
+    update: {},
+    create: {
+      name: 'María Rojas',
+      email: 'maria.rojas@pilates.cl',
+      phone: '+56988776655',
+      passwordHash,
+      role: Role.CLIENT,
+      isInstructor: false,
+      isActive: true,
+      favoriteBranchId: sedeProvidencia.id,
+      favoriteTimeSchedule: '09:00',
+    },
+  });
+
+  // Tomar una clase de Valeria
+  const valeriaSchedule = await prisma.classSchedule.findFirst({
+    where: { instructorId: instructor.id },
+    orderBy: { startTime: 'asc' },
+  });
+
+  if (valeriaSchedule) {
+    const existingBooking1 = await prisma.booking.findFirst({
+      where: { userId: alumno.id, scheduleId: valeriaSchedule.id },
+    });
+    if (!existingBooking1) {
+      await prisma.booking.create({
+        data: {
+          userId: alumno.id,
+          scheduleId: valeriaSchedule.id,
+          bookingCode: 'PIL-990001',
+          status: 'CONFIRMADA',
+          paymentMethod: 'TRANSFER',
+          attendanceStatus: 'PENDING',
+        },
+      });
+      await prisma.classSchedule.update({
+        where: { id: valeriaSchedule.id },
+        data: { availableSlots: { decrement: 1 } },
+      });
+      console.log(`✅ Reserva confirmada creada para Constanza en clase de Valeria`);
+    }
+
+    const existingBooking2 = await prisma.booking.findFirst({
+      where: { userId: alumno2.id, scheduleId: valeriaSchedule.id },
+    });
+    if (!existingBooking2) {
+      await prisma.booking.create({
+        data: {
+          userId: alumno2.id,
+          scheduleId: valeriaSchedule.id,
+          bookingCode: 'PIL-990002',
+          status: 'CONFIRMADA',
+          paymentMethod: 'GATEWAY',
+          attendanceStatus: 'ATTENDED',
+          checkInAt: new Date(),
+          attendanceNotes: 'Alumno puntual, primera sesión con reformer',
+        },
+      });
+      await prisma.classSchedule.update({
+        where: { id: valeriaSchedule.id },
+        data: { availableSlots: { decrement: 1 } },
+      });
+      console.log(`✅ Reserva confirmada creada para María en clase de Valeria`);
+    }
+  }
+
   console.log('✨ Seeder ejecutado con éxito.');
 }
 

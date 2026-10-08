@@ -129,7 +129,7 @@ describe('Schedules & Concurrency (Sprint 2 e2e)', () => {
     });
 
     it('POST /api/v1/schedules - debe prevenir traslape de horario para el mismo instructor', async () => {
-      const baseTime = Date.now() + 1000000000 + Math.floor(Math.random() * 500000000);
+      const baseTime = Date.now() + 25000000000 + Math.floor(Math.random() * 10000000000);
       const start1 = new Date(baseTime).toISOString();
       const end1 = new Date(baseTime + 3600000).toISOString();
 
