@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ClassTypesModule } from './class-types/class-types.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
+import { BranchesModule } from './branches/branches.module.js';
+import { BookingsModule } from './bookings/bookings.module.js';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { SchedulesModule } from './schedules/schedules.module.js';
     AuthModule,
     ClassTypesModule,
     SchedulesModule,
+    BranchesModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

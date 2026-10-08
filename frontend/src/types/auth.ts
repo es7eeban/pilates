@@ -8,6 +8,14 @@ export interface User {
   role: UserRole;
   isInstructor: boolean;
   isActive?: boolean;
+  favoriteBranchId?: string | null;
+  favoriteTimeSchedule?: string | null;
+  favoriteBranch?: import('./schedule.js').Branch | null;
+}
+
+export interface UpdatePreferencesPayload {
+  favoriteBranchId?: string | null;
+  favoriteTimeSchedule?: string | null;
 }
 
 export interface AuthTokens {

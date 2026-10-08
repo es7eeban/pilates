@@ -29,6 +29,11 @@ export class QuerySchedulesDto {
   @IsEnum(ScheduleStatus, { message: 'El estado especificado no es válido' })
   status?: ScheduleStatus;
 
+  @ApiPropertyOptional({ description: 'Filtrar por sede (ID)', example: 'a1b2c3d4-0000-0000-0000-000000000002' })
+  @IsOptional()
+  @IsUUID('4', { message: 'branchId debe ser un UUID válido' })
+  branchId?: string;
+
   @ApiPropertyOptional({ description: 'Filtrar únicamente sesiones con cupos libres (> 0)', example: true })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

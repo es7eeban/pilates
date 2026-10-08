@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updatePreferences: (payload: import('../types/auth').UpdatePreferencesPayload) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,6 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updatePreferences = async (payload: import('../types/auth').UpdatePreferencesPayload) => {
+    const updated = await authApi.updatePreferences(payload);
+    setUser(updated);
+  };
+
   const refreshUser = async () => {
     await fetchCurrentUser();
   };
@@ -72,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         refreshUser,
+        updatePreferences,
       }}
     >
       {children}

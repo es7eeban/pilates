@@ -119,6 +119,13 @@ export class AuthService {
     return safeUser;
   }
 
+  async updatePreferences(
+    userId: string,
+    data: { favoriteBranchId?: string | null; favoriteTimeSchedule?: string | null },
+  ) {
+    return this.usersService.updatePreferences(userId, data);
+  }
+
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return bcrypt.hash(password, saltRounds);

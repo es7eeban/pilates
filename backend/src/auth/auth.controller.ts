@@ -3,6 +3,7 @@ import {
   Post,
   Body,
   Get,
+  Patch,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -55,5 +56,17 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'No autorizado / Token ausente o inválido' })
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('preferences')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Actualizar preferencias del alumno (Sede favorita, horario predilecto)' })
+  @ApiResponse({ status: 200, description: 'Preferencias actualizadas' })
+  async updatePreferences(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: import('./dto/update-preferences.dto.js').UpdatePreferencesDto,
+  ) {
+    return this.authService.updatePreferences(user.id, dto);
   }
 }

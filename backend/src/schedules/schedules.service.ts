@@ -31,6 +31,10 @@ export class SchedulesService {
       where.instructorId = query.instructorId;
     }
 
+    if (query.branchId) {
+      where.branchId = query.branchId;
+    }
+
     if (query.dateFrom || query.dateTo) {
       where.startTime = {};
       if (query.dateFrom) {
@@ -49,6 +53,7 @@ export class SchedulesService {
       where,
       include: {
         classType: true,
+        branch: true,
         instructor: {
           select: {
             id: true,
@@ -74,6 +79,7 @@ export class SchedulesService {
       where: { id },
       include: {
         classType: true,
+        branch: true,
         instructor: {
           select: {
             id: true,
@@ -163,6 +169,16 @@ export class SchedulesService {
       }
     }
 
+    // Validar sede si fue proporcionada
+    if (dto.branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: dto.branchId },
+      });
+      if (!branch || !branch.isActive) {
+        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+      }
+    }
+
     const capacity = dto.capacity ?? classType.defaultCapacity;
     const price = dto.price ?? classType.defaultPrice;
 
@@ -170,6 +186,7 @@ export class SchedulesService {
       data: {
         classTypeId: dto.classTypeId,
         instructorId: dto.instructorId,
+        branchId: dto.branchId,
         startTime: start,
         endTime: end,
         capacity,
@@ -179,6 +196,7 @@ export class SchedulesService {
       },
       include: {
         classType: true,
+        branch: true,
         instructor: {
           select: {
             id: true,
@@ -198,6 +216,15 @@ export class SchedulesService {
 
     if (!classType || !classType.isActive) {
       throw new BadRequestException('El tipo de clase no existe o está inactivo');
+    }
+
+    if (dto.branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: dto.branchId },
+      });
+      if (!branch || !branch.isActive) {
+        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+      }
     }
 
     if (dto.instructorId) {
@@ -264,6 +291,7 @@ export class SchedulesService {
               data: {
                 classTypeId: dto.classTypeId,
                 instructorId: dto.instructorId,
+                branchId: dto.branchId,
                 startTime,
                 endTime,
                 capacity,

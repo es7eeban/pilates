@@ -8,10 +8,56 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('Pilates123!', 10);
 
-  // 1. Admin con facultades de instructor
+  // 1. Sedes (Branches)
+  const sedeProvidencia = await prisma.branch.upsert({
+    where: { slug: 'sede-providencia' },
+    update: {},
+    create: {
+      name: 'Sede Providencia',
+      slug: 'sede-providencia',
+      address: 'Av. Providencia 1208, Of. 402',
+      commune: 'Providencia',
+      city: 'Santiago',
+      phone: '+56944556677',
+      isActive: true,
+    },
+  });
+
+  const sedeLasCondes = await prisma.branch.upsert({
+    where: { slug: 'sede-las-condes' },
+    update: {},
+    create: {
+      name: 'Sede Las Condes',
+      slug: 'sede-las-condes',
+      address: 'Av. Las Condes 9820, Local 3',
+      commune: 'Las Condes',
+      city: 'Santiago',
+      phone: '+56955667788',
+      isActive: true,
+    },
+  });
+
+  const sedeVitacura = await prisma.branch.upsert({
+    where: { slug: 'sede-vitacura' },
+    update: {},
+    create: {
+      name: 'Sede Vitacura',
+      slug: 'sede-vitacura',
+      address: 'Av. Vitacura 5400, Piso 2',
+      commune: 'Vitacura',
+      city: 'Santiago',
+      phone: '+56966778899',
+      isActive: true,
+    },
+  });
+  console.log('✅ Sedes verificadas: Providencia, Las Condes, Vitacura');
+
+  // 2. Admin con facultades de instructor
   const admin = await prisma.user.upsert({
     where: { email: 'admin@pilates.cl' },
-    update: {},
+    update: {
+      favoriteBranchId: sedeProvidencia.id,
+    },
     create: {
       name: 'Administradora Studio',
       email: 'admin@pilates.cl',
@@ -20,14 +66,18 @@ async function main() {
       role: Role.ADMIN,
       isInstructor: true,
       isActive: true,
+      favoriteBranchId: sedeProvidencia.id,
+      favoriteTimeSchedule: '09:00',
     },
   });
   console.log(`✅ Admin verificado: ${admin.email}`);
 
-  // 2. Instructor dedicado
+  // 3. Instructor dedicado
   const instructor = await prisma.user.upsert({
     where: { email: 'valeria.instructor@pilates.cl' },
-    update: {},
+    update: {
+      favoriteBranchId: sedeLasCondes.id,
+    },
     create: {
       name: 'Valeria Castro',
       email: 'valeria.instructor@pilates.cl',
@@ -36,14 +86,19 @@ async function main() {
       role: Role.INSTRUCTOR,
       isInstructor: true,
       isActive: true,
+      favoriteBranchId: sedeLasCondes.id,
+      favoriteTimeSchedule: '18:00',
     },
   });
   console.log(`✅ Instructor verificado: ${instructor.email}`);
 
-  // 3. Alumno demo
+  // 4. Alumno demo con Sede Providencia y horario 09:00 favoritos
   const alumno = await prisma.user.upsert({
     where: { email: 'alumno.demo@pilates.cl' },
-    update: {},
+    update: {
+      favoriteBranchId: sedeProvidencia.id,
+      favoriteTimeSchedule: '09:00',
+    },
     create: {
       name: 'Constanza Morales',
       email: 'alumno.demo@pilates.cl',
@@ -52,11 +107,13 @@ async function main() {
       role: Role.CLIENT,
       isInstructor: false,
       isActive: true,
+      favoriteBranchId: sedeProvidencia.id,
+      favoriteTimeSchedule: '09:00',
     },
   });
-  console.log(`✅ Alumno demo verificado: ${alumno.email}`);
+  console.log(`✅ Alumno demo verificado con sede favorita Providencia: ${alumno.email}`);
 
-  // 4. Tipos de clase
+  // 5. Tipos de clase
   const classTypes = [
     {
       title: 'Pilates Reformer Esencial',
@@ -109,66 +166,77 @@ async function main() {
   const baseDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const plannedSchedules = [
-    // Mañana
+    // Mañana en Providencia
     {
       classTypeId: reformerEsencial.id,
       instructorId: instructor.id,
+      branchId: sedeProvidencia.id,
       dayOffset: 1,
       startHour: 9,
       startMin: 0,
       duration: 55,
       capacity: 8,
     },
+    // Mañana en Las Condes
     {
       classTypeId: matFlow.id,
       instructorId: admin.id,
+      branchId: sedeLasCondes.id,
       dayOffset: 1,
       startHour: 10,
       startMin: 30,
       duration: 60,
       capacity: 12,
     },
+    // Mañana en Vitacura
     {
       classTypeId: reformerDinamico.id,
       instructorId: instructor.id,
+      branchId: sedeVitacura.id,
       dayOffset: 1,
       startHour: 18,
       startMin: 0,
       duration: 55,
       capacity: 8,
     },
-    // Pasado mañana
+    // Pasado mañana en Providencia
     {
       classTypeId: reformerEsencial.id,
       instructorId: admin.id,
+      branchId: sedeProvidencia.id,
       dayOffset: 2,
       startHour: 8,
       startMin: 30,
       duration: 55,
       capacity: 8,
     },
+    // Pasado mañana en Las Condes
     {
       classTypeId: reformerDinamico.id,
       instructorId: instructor.id,
+      branchId: sedeLasCondes.id,
       dayOffset: 2,
       startHour: 19,
       startMin: 0,
       duration: 55,
       capacity: 8,
     },
-    // En 3 días
+    // En 3 días en Vitacura
     {
       classTypeId: matFlow.id,
       instructorId: instructor.id,
+      branchId: sedeVitacura.id,
       dayOffset: 3,
       startHour: 9,
       startMin: 0,
       duration: 60,
       capacity: 12,
     },
+    // En 3 días en Providencia
     {
       classTypeId: reformerEsencial.id,
       instructorId: instructor.id,
+      branchId: sedeProvidencia.id,
       dayOffset: 3,
       startHour: 18,
       startMin: 30,
@@ -176,6 +244,12 @@ async function main() {
       capacity: 8,
     },
   ];
+
+  // Actualizar cualquier sesión anterior sin sede asignada a Providencia
+  await prisma.classSchedule.updateMany({
+    where: { branchId: null },
+    data: { branchId: sedeProvidencia.id },
+  });
 
   for (const s of plannedSchedules) {
     const startTime = new Date(baseDay);
@@ -196,6 +270,7 @@ async function main() {
         data: {
           classTypeId: s.classTypeId,
           instructorId: s.instructorId,
+          branchId: s.branchId,
           startTime,
           endTime,
           capacity: s.capacity,
@@ -204,6 +279,11 @@ async function main() {
         },
       });
       console.log(`✅ Sesión programada para: ${startTime.toISOString()} (${s.duration} min)`);
+    } else if (!existingSchedule.branchId) {
+      await prisma.classSchedule.update({
+        where: { id: existingSchedule.id },
+        data: { branchId: s.branchId },
+      });
     }
   }
 

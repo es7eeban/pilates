@@ -1,23 +1,48 @@
 import { useState } from 'react';
-import { Calendar, CheckCircle2, Clock, Sparkles, UserCheck, ShieldCheck, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
 import { ScheduleCatalog } from './components/ScheduleCatalog';
+import { BookingModal } from './components/BookingModal';
+import { MyBookingsModal } from './components/MyBookingsModal';
+import { AdminVouchersModal } from './components/AdminVouchersModal';
+import type { ClassSchedule } from './types/schedule';
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
+  const [selectedSchedule, setSelectedSchedule] = useState<ClassSchedule | null>(null);
+  const [myBookingsOpen, setMyBookingsOpen] = useState(false);
+  const [adminVouchersOpen, setAdminVouchersOpen] = useState(false);
+  const [catalogKey, setCatalogKey] = useState(0);
+
   const handleOpenAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
+  const handleSelectSchedule = (schedule: ClassSchedule) => {
+    if (!isAuthenticated) {
+      handleOpenAuth('login');
+      return;
+    }
+    setSelectedSchedule(schedule);
+  };
+
+  const handleRefreshSchedule = () => {
+    setCatalogKey((prev) => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-sand-50 text-charcoal flex flex-col">
-      <Navbar onOpenAuth={handleOpenAuth} />
+      <Navbar
+        onOpenAuth={handleOpenAuth}
+        onOpenMyBookings={() => setMyBookingsOpen(true)}
+        onOpenAdminVouchers={() => setAdminVouchersOpen(true)}
+      />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-12 w-full">
         {/* Authenticated Banner */}
@@ -41,27 +66,45 @@ function MainContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 self-stretch sm:self-auto">
-                <span className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5 font-medium">
-                  <UserCheck className="w-3.5 h-3.5" /> Token JWT Activo
-                </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMyBookingsOpen(true)}
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-sage-50 text-sage-800 hover:bg-sage-100 border border-sage-200 rounded-xl transition flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Ver Mis Reservas</span>
+                </button>
+
+                {user.role === 'ADMIN' && (
+                  <button
+                    onClick={() => setAdminVouchersOpen(true)}
+                    className="px-3.5 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition flex items-center gap-1.5"
+                  >
+                    <FileCheck className="w-3.5 h-3.5" />
+                    <span>Bandeja Admin</span>
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-sand-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-charcoal-muted">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-sage-600" />
+                <MapPin className="w-4 h-4 text-sage-600" />
                 <span>
-                  {user.role === 'ADMIN'
-                    ? 'Acceso total: Administración de agenda, comprobantes y catálogo.'
-                    : user.role === 'INSTRUCTOR'
-                    ? 'Acceso instructor: Visualización de clases asignadas y lista de alumnos.'
-                    : 'Acceso alumno: Reserva de reformer y consulta de historial de clases.'}
+                  Sede Predilecta:{' '}
+                  {user.favoriteBranch ? (
+                    <strong className="text-sage-900 font-semibold inline-flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      {user.favoriteBranch.name}
+                    </strong>
+                  ) : (
+                    <span className="italic">Sin sede favorita (márcala en la agenda)</span>
+                  )}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sage-700 font-medium">
-                <ArrowRight className="w-4 h-4" />
-                <span>Próximo paso en roadmap: Sprint 2 (Catálogo de horarios y aforo en tiempo real)</span>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Control de aforo activo con PostgreSQL transaccional</span>
               </div>
             </div>
           </div>
@@ -70,15 +113,15 @@ function MainContent() {
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sage-100 text-sage-800 text-xs font-semibold uppercase tracking-wider mb-6">
-            <Sparkles className="w-3.5 h-3.5" /> Sprint 1 Completado · Auth & Docker Activo
+            <Sparkles className="w-3.5 h-3.5" /> Plataforma Multisede · Agenda en Vivo
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-sage-900 mb-6 leading-tight">
-            Encuentra tu ritmo, conecta con tu cuerpo y reserva tu reformer.
+            Encuentra tu ritmo, conecta con tu cuerpo y reserva en tu sede favorita.
           </h1>
 
           <p className="text-base md:text-lg text-charcoal-muted max-w-2xl mx-auto mb-8">
-            Plataforma moderna para la reserva de horas de pilates, integración con pasarelas de pago y validación de transferencias bancarias.
+            Selecciona entre Providencia, Las Condes o Vitacura, filtra por horario y asegura tu reformer al instante.
           </p>
 
           {!isAuthenticated && (
@@ -103,10 +146,10 @@ function MainContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-12">
           <div className="p-6 rounded-2xl bg-white border border-sand-200 shadow-sm hover:shadow-md transition">
             <div className="w-10 h-10 rounded-xl bg-sage-100 text-sage-700 flex items-center justify-center mb-4">
-              <Calendar className="w-5 h-5" />
+              <MapPin className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-charcoal mb-1">Agenda en Tiempo Real</h3>
-            <p className="text-sm text-charcoal-muted">Control estricto de aforo y cupos garantizados con bloqueo transaccional.</p>
+            <h3 className="font-semibold text-charcoal mb-1">Múltiples Sedes</h3>
+            <p className="text-sm text-charcoal-muted">Providencia, Las Condes y Vitacura con horarios y disciplinas dedicadas.</p>
           </div>
 
           <div className="p-6 rounded-2xl bg-white border border-sand-200 shadow-sm hover:shadow-md transition">
@@ -121,30 +164,50 @@ function MainContent() {
             <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4">
               <Clock className="w-5 h-5" />
             </div>
-            <h3 className="font-semibold text-charcoal mb-1">Auditoría de Pagos</h3>
-            <p className="text-sm text-charcoal-muted">Panel administrativo para validación inmediata de reservas con comprobantes.</p>
+            <h3 className="font-semibold text-charcoal mb-1">Control de Aforo Estricto</h3>
+            <p className="text-sm text-charcoal-muted">Garantía sin sobrecupos con transacciones pesimistas de alta concurrencia.</p>
           </div>
         </div>
 
         {/* Live Schedules / Class Catalog */}
         <ScheduleCatalog
+          key={catalogKey}
           onRequestLogin={() => handleOpenAuth('login')}
-          onSelectSchedule={(sched) => {
-            alert(`Has seleccionado la clase: ${sched.classType.title}. El módulo de reservas y pagos se completará en el siguiente Sprint.`);
-          }}
+          onSelectSchedule={handleSelectSchedule}
         />
       </main>
 
       {/* Footer */}
       <footer className="border-t border-sand-200 py-6 text-center text-xs text-charcoal-muted bg-white/50">
-        Pilates Studio · Plataforma de Agendamiento & Gestión · Entorno de Desarrollo Local
+        Pilates Studio · Plataforma de Agendamiento Multisede · Entorno de Desarrollo Local
       </footer>
 
-      {/* Auth Modal */}
+      {/* Modals */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialMode={authMode}
+      />
+
+      <BookingModal
+        schedule={selectedSchedule}
+        isOpen={!!selectedSchedule}
+        onClose={() => setSelectedSchedule(null)}
+        onSuccess={() => {
+          handleRefreshSchedule();
+        }}
+      />
+
+      <MyBookingsModal
+        isOpen={myBookingsOpen}
+        onClose={() => setMyBookingsOpen(false)}
+        onRefreshSchedule={handleRefreshSchedule}
+      />
+
+      <AdminVouchersModal
+        isOpen={adminVouchersOpen}
+        onClose={() => setAdminVouchersOpen(false)}
+        onUpdated={handleRefreshSchedule}
       />
     </div>
   );

@@ -24,7 +24,38 @@ export class UsersService {
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
+      include: {
+        favoriteBranch: true,
+      },
     });
+  }
+
+  async updatePreferences(
+    userId: string,
+    data: { favoriteBranchId?: string | null; favoriteTimeSchedule?: string | null },
+  ) {
+    if (data.favoriteBranchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: data.favoriteBranchId },
+      });
+      if (!branch || !branch.isActive) {
+        throw new NotFoundException('La sede seleccionada no existe o está inactiva');
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.favoriteBranchId !== undefined && { favoriteBranchId: data.favoriteBranchId }),
+        ...(data.favoriteTimeSchedule !== undefined && { favoriteTimeSchedule: data.favoriteTimeSchedule }),
+      },
+      include: {
+        favoriteBranch: true,
+      },
+    });
+
+    const { passwordHash: _, ...safeUser } = updated;
+    return safeUser;
   }
 
   async create(data: CreateUserData): Promise<User> {

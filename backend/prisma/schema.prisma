@@ -49,14 +49,35 @@ model User {
   role         Role     @default(CLIENT)
   isInstructor Boolean  @default(false) @map("is_instructor")
   isActive     Boolean  @default(true) @map("is_active")
+  favoriteBranchId     String?  @map("favorite_branch_id")
+  favoriteTimeSchedule String?  @map("favorite_time_schedule") @db.VarChar(20)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  favoriteBranch  Branch?         @relation("UserFavoriteBranch", fields: [favoriteBranchId], references: [id])
   bookings        Booking[]
   taughtSchedules ClassSchedule[] @relation("InstructorSchedules")
   auditedPayments Payment[]       @relation("AdminVerifiedPayments")
 
   @@map("users")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(120)
+  address   String   @db.VarChar(255)
+  city      String   @default("Santiago") @db.VarChar(100)
+  commune   String?  @db.VarChar(100)
+  phone     String?  @db.VarChar(30)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  schedules        ClassSchedule[]
+  favoritedByUsers User[]          @relation("UserFavoriteBranch")
+
+  @@map("branches")
 }
 
 model ClassType {
@@ -79,6 +100,7 @@ model ClassSchedule {
   id             String         @id @default(uuid())
   classTypeId    String         @map("class_type_id")
   instructorId   String?        @map("instructor_id")
+  branchId       String?        @map("branch_id")
   startTime      DateTime       @map("start_time")
   endTime        DateTime       @map("end_time")
   capacity       Int            @default(8)
@@ -89,9 +111,11 @@ model ClassSchedule {
 
   classType  ClassType @relation(fields: [classTypeId], references: [id])
   instructor User?     @relation("InstructorSchedules", fields: [instructorId], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
   bookings   Booking[]
 
   @@index([startTime, status])
+  @@index([branchId])
   @@map("class_schedules")
 }
 

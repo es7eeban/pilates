@@ -12,6 +12,11 @@ export class CreateScheduleDto {
   @IsUUID('4', { message: 'El instructorId debe ser un UUID válido' })
   instructorId?: string;
 
+  @ApiPropertyOptional({ description: 'ID de la sede donde se imparte la clase', example: 'a1b2c3d4-0000-0000-0000-000000000002' })
+  @IsOptional()
+  @IsUUID('4', { message: 'El branchId debe ser un UUID válido' })
+  branchId?: string;
+
   @ApiProperty({ description: 'Fecha y hora de inicio en formato ISO 8601', example: '2026-10-15T09:00:00Z' })
   @IsDateString({}, { message: 'La fecha de inicio debe tener formato ISO 8601 válido' })
   @IsNotEmpty({ message: 'La fecha y hora de inicio es obligatoria' })

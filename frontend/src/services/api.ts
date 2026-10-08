@@ -56,6 +56,28 @@ export const authApi = {
     });
     return handleResponse<User>(res);
   },
+
+  async updatePreferences(payload: import('../types/auth').UpdatePreferencesPayload): Promise<User> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/auth/preferences`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<User>(res);
+  },
+};
+
+export const branchesApi = {
+  async getAll(): Promise<import('../types/schedule').Branch[]> {
+    const res = await fetch(`${API_BASE_URL}/branches`);
+    return handleResponse(res);
+  },
 };
 
 export const classTypesApi = {
@@ -72,6 +94,7 @@ export const schedulesApi = {
     if (params?.dateTo) query.append('dateTo', params.dateTo);
     if (params?.classTypeId) query.append('classTypeId', params.classTypeId);
     if (params?.instructorId) query.append('instructorId', params.instructorId);
+    if (params?.branchId) query.append('branchId', params.branchId);
     if (params?.onlyAvailable) query.append('onlyAvailable', 'true');
 
     const queryString = query.toString();
@@ -83,5 +106,103 @@ export const schedulesApi = {
   async getById(id: string): Promise<import('../types/schedule').ClassSchedule> {
     const res = await fetch(`${API_BASE_URL}/schedules/${id}`);
     return handleResponse(res);
+  },
+};
+
+export const bookingsApi = {
+  async create(payload: import('../types/schedule').CreateBookingPayload): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('Debes iniciar sesión para reservar');
+
+    const res = await fetch(`${API_BASE_URL}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  async getMyBookings(): Promise<import('../types/schedule').Booking[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/schedule').Booking[]>(res);
+  },
+
+  async cancel(id: string): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  async uploadVoucher(id: string, voucherUrl: string): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/${id}/upload-voucher`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ voucherUrl }),
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  // Endpoints administrativos
+  async getPendingVouchers(): Promise<import('../types/schedule').Booking[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/admin/pending-vouchers`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/schedule').Booking[]>(res);
+  },
+
+  async approveVoucher(id: string): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/admin/${id}/approve-voucher`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  async rejectVoucher(id: string, reason: string): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/bookings/admin/${id}/reject-voucher`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
   },
 };

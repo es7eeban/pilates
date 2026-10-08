@@ -1,13 +1,19 @@
 import React from 'react';
-import { LogOut, User as UserIcon, Shield, Sparkles } from 'lucide-react';
+import { LogOut, User as UserIcon, Shield, Sparkles, BookOpen, FileCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
 
 interface NavbarProps {
   onOpenAuth: (mode: 'login' | 'register') => void;
+  onOpenMyBookings: () => void;
+  onOpenAdminVouchers: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenAuth,
+  onOpenMyBookings,
+  onOpenAdminVouchers,
+}) => {
   const { user, isAuthenticated, logout } = useAuth();
 
   const getRoleBadge = (role: UserRole) => {
@@ -15,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
       case 'ADMIN':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-terra-light text-terra border border-terra/20">
-            <Shield className="w-3 h-3" /> Administrador
+            <Shield className="w-3 h-3" /> Admin
           </span>
         );
       case 'INSTRUCTOR':
@@ -45,25 +51,42 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               Pilates Studio
             </span>
             <span className="text-[10px] text-charcoal-muted tracking-wide uppercase font-medium">
-              Agendamiento & Bienestar
+              Multisede & Agendamiento
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-sage-50 border border-sage-200 text-xs text-sage-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Dev Activo</span>
-          </div>
+        <div className="flex items-center gap-3 sm:gap-4">
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenMyBookings}
+                className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-200 rounded-xl transition shadow-sm flex items-center gap-1.5"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-sage-600" />
+                <span className="hidden sm:inline">Mis Reservas</span>
+              </button>
+
+              {user.role === 'ADMIN' && (
+                <button
+                  onClick={onOpenAdminVouchers}
+                  className="px-3 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                >
+                  <FileCheck className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Validar Pagos</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-sand-50/80 px-3 py-1.5 rounded-xl border border-sand-200">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 bg-sand-50/80 px-2.5 py-1.5 rounded-xl border border-sand-200">
                 <div className="w-7 h-7 rounded-full bg-sage-200 text-sage-800 flex items-center justify-center font-semibold text-xs">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="text-left">
-                  <div className="text-xs font-bold text-charcoal leading-none">
+                <div className="text-left hidden sm:block">
+                  <div className="text-xs font-bold text-charcoal leading-none truncate max-w-[120px]">
                     {user.name}
                   </div>
                   <div className="mt-1">{getRoleBadge(user.role)}</div>

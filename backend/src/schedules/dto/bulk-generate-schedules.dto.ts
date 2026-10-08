@@ -25,6 +25,11 @@ export class BulkGenerateSchedulesDto {
   @IsUUID('4', { message: 'El instructorId debe ser un UUID válido' })
   instructorId?: string;
 
+  @ApiPropertyOptional({ description: 'ID de la sede donde se imparten las sesiones', example: 'a1b2c3d4-0000-0000-0000-000000000002' })
+  @IsOptional()
+  @IsUUID('4', { message: 'El branchId debe ser un UUID válido' })
+  branchId?: string;
+
   @ApiProperty({ description: 'Fecha de inicio del rango (YYYY-MM-DD)', example: '2026-10-15' })
   @IsDateString({}, { message: 'La fecha de inicio debe tener formato YYYY-MM-DD' })
   @IsNotEmpty({ message: 'La fecha de inicio es obligatoria' })
