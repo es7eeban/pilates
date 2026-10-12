@@ -6,13 +6,17 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '@prisma/client';
 import { BookingsService } from './bookings.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 import { UploadVoucherDto } from './dto/upload-voucher.dto.js';
 import { RejectVoucherDto } from './dto/reject-voucher.dto.js';
+import { voucherMulterOptions } from './upload.config.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -96,7 +100,7 @@ export class BookingsController {
   }
 
   @Patch(':id/upload-voucher')
-  @ApiOperation({ summary: 'Adjuntar comprobante de transferencia bancaria' })
+  @ApiOperation({ summary: 'Adjuntar comprobante de transferencia bancaria (URL)' })
   @ApiResponse({ status: 200, description: 'Comprobante cargado, estado pasa a PENDIENTE_VALIDACION' })
   async uploadVoucher(
     @Param('id') id: string,
@@ -104,5 +108,56 @@ export class BookingsController {
     @Body() dto: UploadVoucherDto,
   ) {
     return this.bookingsService.uploadVoucher(id, user.id, dto);
+  }
+
+  @Post('upload-voucher')
+  @UseInterceptors(FileInterceptor('file', voucherMulterOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Archivo de comprobante (JPG, PNG, WEBP o PDF, máx 5MB)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({ summary: 'Subir archivo físico de comprobante (previo o durante checkout)' })
+  @ApiResponse({ status: 201, description: 'Archivo guardado con URL de acceso generada' })
+  async uploadVoucherDirect(
+    @CurrentUser() _user: AuthenticatedUser,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.bookingsService.handleDirectVoucherUpload(file);
+  }
+
+  @Post(':id/upload-voucher-file')
+  @UseInterceptors(FileInterceptor('file', voucherMulterOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Archivo de comprobante (JPG, PNG, WEBP o PDF, máx 5MB)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({ summary: 'Subir archivo físico de comprobante para una reserva existente' })
+  @ApiResponse({ status: 201, description: 'Comprobante guardado y reserva en PENDIENTE_VALIDACION' })
+  async uploadVoucherFile(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.bookingsService.uploadVoucherFile(id, user.id, file);
   }
 }

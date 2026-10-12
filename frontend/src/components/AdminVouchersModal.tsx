@@ -1,7 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { X, CheckCircle, XCircle, ExternalLink, Loader2, AlertCircle, Building2, User, Calendar } from 'lucide-react';
+import {
+  X,
+  CheckCircle,
+  XCircle,
+  ExternalLink,
+  Loader2,
+  AlertCircle,
+  Building2,
+  User,
+  Calendar,
+  FileText,
+  Eye,
+} from 'lucide-react';
 import type { Booking } from '../types/schedule';
-import { bookingsApi } from '../services/api';
+import { bookingsApi, resolveMediaUrl, isPdfDocument } from '../services/api';
+import { VoucherPreviewModal } from './VoucherPreviewModal';
 
 interface AdminVouchersModalProps {
   isOpen: boolean;
@@ -18,6 +31,7 @@ export const AdminVouchersModal: React.FC<AdminVouchersModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [previewingBooking, setPreviewingBooking] = useState<Booking | null>(null);
 
   const fetchPending = async () => {
     setLoading(true);
@@ -146,19 +160,64 @@ export const AdminVouchersModal: React.FC<AdminVouchersModalProps> = ({
                     </div>
 
                     {b.voucherUrl ? (
-                      <div className="pt-1">
-                        <a
-                          href={b.voucherUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-sage-700 hover:text-sage-900 font-semibold underline"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Ver Comprobante Adjunto
-                        </a>
+                      <div className="pt-2">
+                        {isPdfDocument(b.voucherUrl) ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewingBooking(b)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs font-semibold transition shadow-sm"
+                            >
+                              <FileText className="w-4 h-4 text-red-600" />
+                              Visualizar Documento PDF
+                            </button>
+                            <a
+                              href={resolveMediaUrl(b.voucherUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-charcoal-muted hover:text-charcoal inline-flex items-center gap-1"
+                              title="Abrir en pestaña nueva"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Enlace directo
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <div
+                              onClick={() => setPreviewingBooking(b)}
+                              className="relative group cursor-pointer shrink-0"
+                              title="Clic para inspeccionar con zoom"
+                            >
+                              <img
+                                src={resolveMediaUrl(b.voucherUrl)}
+                                alt="Comprobante"
+                                className="w-14 h-14 rounded-xl object-cover border border-sand-300 shadow-sm group-hover:ring-2 group-hover:ring-sage-500 transition"
+                              />
+                              <div className="absolute inset-0 bg-charcoal/30 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition">
+                                <Eye className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="space-y-0.5">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewingBooking(b)}
+                                className="inline-flex items-center gap-1.5 text-xs text-sage-800 hover:text-sage-950 font-bold hover:underline"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                Inspeccionar Comprobante
+                              </button>
+                              <p className="text-[11px] text-charcoal-muted">
+                                Visor con Zoom, giro 90° y resolución rápida
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <span className="text-amber-700 text-[11px]">Sin URL de comprobante directo</span>
+                      <span className="text-amber-700 text-[11px] font-medium">
+                        Sin comprobante adjunto aún
+                      </span>
                     )}
                   </div>
 
@@ -191,6 +250,29 @@ export const AdminVouchersModal: React.FC<AdminVouchersModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Visor Interactivo en Pantalla Completa con Zoom y Giro */}
+      {previewingBooking && (
+        <VoucherPreviewModal
+          isOpen={true}
+          onClose={() => setPreviewingBooking(null)}
+          voucherUrl={previewingBooking.voucherUrl || null}
+          bookingCode={previewingBooking.bookingCode}
+          clientName={previewingBooking.user?.name}
+          classTitle={previewingBooking.schedule?.classType?.title}
+          onApprove={() => {
+            const id = previewingBooking.id;
+            setPreviewingBooking(null);
+            handleApprove(id);
+          }}
+          onReject={() => {
+            const id = previewingBooking.id;
+            setPreviewingBooking(null);
+            handleReject(id);
+          }}
+          isProcessing={processingId === previewingBooking.id}
+        />
+      )}
     </div>
   );
 };

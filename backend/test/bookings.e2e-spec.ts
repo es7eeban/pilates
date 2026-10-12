@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import { join } from 'path';
+import express from 'express';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { ensureUploadsDirExists } from '../src/bookings/upload.config.js';
 
 describe('Branches & Bookings Flow (e2e)', () => {
   let app: INestApplication;
@@ -18,6 +21,11 @@ describe('Branches & Bookings Flow (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    ensureUploadsDirExists();
+    const uploadsPath = join(process.cwd(), 'uploads');
+    app.use('/uploads', express.static(uploadsPath));
+    app.use('/api/v1/uploads', express.static(uploadsPath));
+
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(
       new ValidationPipe({
@@ -147,7 +155,57 @@ describe('Branches & Bookings Flow (e2e)', () => {
       expect(updatedSchedule!.availableSlots).toBe(3);
     });
 
-    it('PATCH /api/v1/bookings/:id/upload-voucher - debe subir comprobante y cambiar estado a PENDIENTE_VALIDACION', async () => {
+    it('POST /api/v1/bookings/upload-voucher - debe rechazar archivos con extensiones no permitidas (.txt)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/bookings/upload-voucher')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .attach('file', Buffer.from('contenido de prueba no valido'), 'archivo.txt')
+        .expect(400);
+
+      expect(res.body.message).toContain('Tipo de archivo no permitido');
+    });
+
+    it('POST /api/v1/bookings/upload-voucher - debe subir imagen física de comprobante y permitir descarga estática', async () => {
+      // Pequeño buffer PNG de prueba
+      const dummyPngBuffer = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64',
+      );
+
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/bookings/upload-voucher')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .attach('file', dummyPngBuffer, 'recibo-transferencia.png')
+        .expect(201);
+
+      expect(res.body.url).toMatch(/^\/uploads\/vouchers\/voucher-.*\.png$/);
+      expect(res.body.mimetype).toBe('image/png');
+
+      // Verificar que el servidor estático entrega el archivo
+      await request(app.getHttpServer())
+        .get(res.body.url)
+        .expect(200);
+    });
+
+    it('POST /api/v1/bookings/:id/upload-voucher-file - debe subir archivo PDF directamente a la reserva', async () => {
+      const dummyPdfBuffer = Buffer.from('%PDF-1.4 dummy test pdf document content %%EOF');
+
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/bookings/${bookingId}/upload-voucher-file`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .attach('file', dummyPdfBuffer, 'comprobante-pago.pdf')
+        .expect(201);
+
+      expect(res.body.status).toBe('PENDIENTE_VALIDACION');
+      expect(res.body.voucherUrl).toMatch(/^\/uploads\/vouchers\/voucher-.*\.pdf$/);
+
+      // Verificar que el archivo PDF estático se sirve correctamente
+      await request(app.getHttpServer())
+        .get(res.body.voucherUrl)
+        .expect(200);
+    });
+
+    it('PATCH /api/v1/bookings/:id/upload-voucher - compatibilidad hacia atrás con URL string', async () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/bookings/${bookingId}/upload-voucher`)
         .set('Authorization', `Bearer ${clientToken}`)

@@ -46,6 +46,9 @@ coverage/
 docker-data/
 postgres-data/
 minio-data/
+uploads/
+**/uploads/*
+!**/uploads/.gitkeep
 
 # IDEs and Editors
 .idea/

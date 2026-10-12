@@ -2,6 +2,22 @@ import type { AuthResponse, LoginPayload, RegisterPayload, User } from '../types
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
+export function resolveMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const backendHost = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1')
+    .replace(/\/api\/v1\/?$/, '');
+  return `${backendHost}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+export function isPdfDocument(url?: string | null): boolean {
+  if (!url) return false;
+  const clean = url.split('?')[0].toLowerCase();
+  return clean.endsWith('.pdf');
+}
+
 export const tokenStorage = {
   getAccessToken: () => localStorage.getItem('pilates_access_token'),
   getRefreshToken: () => localStorage.getItem('pilates_refresh_token'),
@@ -161,6 +177,40 @@ export const bookingsApi = {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ voucherUrl }),
+    });
+    return handleResponse<import('../types/schedule').Booking>(res);
+  },
+
+  async uploadVoucherDirect(file: File): Promise<{ url: string; filename: string; originalName: string; size: number; mimetype: string }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE_URL}/bookings/upload-voucher`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    return handleResponse<{ url: string; filename: string; originalName: string; size: number; mimetype: string }>(res);
+  },
+
+  async uploadVoucherFile(id: string, file: File): Promise<import('../types/schedule').Booking> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE_URL}/bookings/${id}/upload-voucher-file`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
     });
     return handleResponse<import('../types/schedule').Booking>(res);
   },

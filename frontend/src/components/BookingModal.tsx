@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Calendar, Clock, MapPin, User, CreditCard, Building2, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import type { ClassSchedule } from '../types/schedule';
 import { bookingsApi } from '../services/api';
+import { VoucherDropzone } from './VoucherDropzone';
 
 interface BookingModalProps {
   schedule: ClassSchedule | null;
@@ -17,6 +18,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onSuccess,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'GATEWAY' | 'TRANSFER'>('GATEWAY');
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherUrl, setVoucherUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,10 +54,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setError(null);
 
     try {
+      let finalVoucherUrl: string | undefined = undefined;
+
+      if (paymentMethod === 'TRANSFER') {
+        if (voucherFile) {
+          const uploaded = await bookingsApi.uploadVoucherDirect(voucherFile);
+          finalVoucherUrl = uploaded.url;
+        } else if (voucherUrl.trim()) {
+          finalVoucherUrl = voucherUrl.trim();
+        }
+      }
+
       const res = await bookingsApi.create({
         scheduleId: schedule.id,
         paymentMethod,
-        voucherUrl: paymentMethod === 'TRANSFER' && voucherUrl.trim() ? voucherUrl.trim() : undefined,
+        voucherUrl: finalVoucherUrl,
       });
       setCompletedBooking(res);
       onSuccess();
@@ -244,18 +257,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
 
                   <div className="pt-2 border-t border-sand-200 mt-2">
-                    <label className="block text-[11px] font-semibold text-charcoal mb-1">
-                      URL del Comprobante (Opcional ahora):
-                    </label>
-                    <input
-                      type="url"
-                      value={voucherUrl}
-                      onChange={(e) => setVoucherUrl(e.target.value)}
-                      placeholder="https://storage... o enlace de tu recibo"
-                      className="w-full px-3 py-2 bg-white border border-sand-300 rounded-lg text-xs focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                    <VoucherDropzone
+                      file={voucherFile}
+                      onFileChange={setVoucherFile}
+                      urlFallback={voucherUrl}
+                      onUrlFallbackChange={setVoucherUrl}
+                      disabled={loading}
                     />
-                    <span className="text-[10px] text-charcoal-muted mt-0.5 block">
-                      Puedes adjuntar el comprobante ahora o después desde "Mis Reservas".
+                    <span className="text-[10px] text-charcoal-muted mt-1 block">
+                      {voucherFile || voucherUrl
+                        ? '✓ Comprobante listo. Al confirmar, tu reserva pasará a revisión del administrador.'
+                        : 'Puedes adjuntar el comprobante ahora o después desde "Mis Reservas".'}
                     </span>
                   </div>
                 </div>

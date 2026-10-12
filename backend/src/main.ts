@@ -1,12 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
+import express from 'express';
 import { AppModule } from './app.module.js';
+import { ensureUploadsDirExists } from './bookings/upload.config.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const port = process.env.PORT ?? 4000;
   const prefix = process.env.API_PREFIX ?? 'api/v1';
+
+  // Asegurar directorio de uploads y servir estáticos
+  ensureUploadsDirExists();
+  const uploadsPath = join(process.cwd(), 'uploads');
+  app.use('/uploads', express.static(uploadsPath));
+  app.use(`/${prefix}/uploads`, express.static(uploadsPath));
 
   app.setGlobalPrefix(prefix);
 

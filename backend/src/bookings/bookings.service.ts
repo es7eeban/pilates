@@ -363,4 +363,53 @@ export class BookingsService {
       return updatedBooking;
     });
   }
+
+  handleDirectVoucherUpload(file?: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar un archivo de comprobante');
+    }
+
+    return {
+      url: `/uploads/vouchers/${file.filename}`,
+      filename: file.filename,
+      originalName: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+    };
+  }
+
+  async uploadVoucherFile(id: string, userId: string, file?: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Debes adjuntar un archivo de comprobante');
+    }
+
+    const booking = await this.findById(id, userId);
+
+    if (booking.paymentMethod !== PaymentMethod.TRANSFER) {
+      throw new BadRequestException('Solo las reservas con método TRANSFER permiten adjuntar comprobante');
+    }
+
+    if (booking.status === BookingStatus.CONFIRMADA) {
+      throw new ConflictException('Esta reserva ya fue confirmada previamente');
+    }
+
+    const voucherUrl = `/uploads/vouchers/${file.filename}`;
+
+    return this.prisma.booking.update({
+      where: { id },
+      data: {
+        voucherUrl,
+        status: BookingStatus.PENDIENTE_VALIDACION,
+      },
+      include: {
+        schedule: {
+          include: {
+            classType: true,
+            branch: true,
+          },
+        },
+        payment: true,
+      },
+    });
+  }
 }

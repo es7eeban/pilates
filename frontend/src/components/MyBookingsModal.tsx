@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, Clock, MapPin, AlertCircle, Loader2, Upload, Ban } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, AlertCircle, Loader2, Upload, Ban, CheckCircle2, Eye } from 'lucide-react';
 import type { Booking } from '../types/schedule';
 import { bookingsApi } from '../services/api';
+import { VoucherDropzone } from './VoucherDropzone';
+import { VoucherPreviewModal } from './VoucherPreviewModal';
 
 interface MyBookingsModalProps {
   isOpen: boolean;
@@ -18,8 +20,10 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVoucherBookingId, setSelectedVoucherBookingId] = useState<string | null>(null);
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherUrlInput, setVoucherUrlInput] = useState('');
   const [submittingVoucher, setSubmittingVoucher] = useState(false);
+  const [viewingVoucher, setViewingVoucher] = useState<{ url: string; bookingCode?: string; classTitle?: string } | null>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -54,11 +58,16 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
   };
 
   const handleUploadVoucher = async (bookingId: string) => {
-    if (!voucherUrlInput.trim()) return;
+    if (!voucherFile && !voucherUrlInput.trim()) return;
     setSubmittingVoucher(true);
     try {
-      await bookingsApi.uploadVoucher(bookingId, voucherUrlInput.trim());
+      if (voucherFile) {
+        await bookingsApi.uploadVoucherFile(bookingId, voucherFile);
+      } else {
+        await bookingsApi.uploadVoucher(bookingId, voucherUrlInput.trim());
+      }
       setSelectedVoucherBookingId(null);
+      setVoucherFile(null);
       setVoucherUrlInput('');
       await fetchBookings();
     } catch (err: any) {
@@ -214,32 +223,52 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Rejection notice if admin rejected */}
+                  {b.status === 'RECHAZADA_ADMIN' && b.rejectionReason && (
+                    <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-1">
+                      <span className="font-bold block">Motivo de rechazo de transferencia:</span>
+                      <p>{b.rejectionReason}</p>
+                    </div>
+                  )}
+
                   {/* Actions / Voucher input */}
                   {b.status === 'PENDIENTE_PAGO' && b.paymentMethod === 'TRANSFER' && (
                     <div className="pt-2 border-t border-sand-200">
                       {selectedVoucherBookingId === b.id ? (
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            type="url"
-                            value={voucherUrlInput}
-                            onChange={(e) => setVoucherUrlInput(e.target.value)}
-                            placeholder="Pega la URL de tu comprobante"
-                            className="flex-1 px-3 py-1.5 bg-white border border-sand-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-sage-500"
+                        <div className="mt-2 p-3 rounded-xl bg-sand-50/80 border border-sand-200 space-y-3">
+                          <VoucherDropzone
+                            file={voucherFile}
+                            onFileChange={setVoucherFile}
+                            urlFallback={voucherUrlInput}
+                            onUrlFallbackChange={setVoucherUrlInput}
+                            disabled={submittingVoucher}
                           />
-                          <button
-                            onClick={() => handleUploadVoucher(b.id)}
-                            disabled={submittingVoucher || !voucherUrlInput.trim()}
-                            className="px-3 py-1.5 bg-sage-600 hover:bg-sage-700 disabled:opacity-50 text-white rounded-lg text-xs font-medium flex items-center gap-1"
-                          >
-                            {submittingVoucher ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                            Enviar
-                          </button>
-                          <button
-                            onClick={() => setSelectedVoucherBookingId(null)}
-                            className="px-2 py-1.5 text-xs text-charcoal-muted hover:text-charcoal"
-                          >
-                            Cancelar
-                          </button>
+                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-sand-200">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedVoucherBookingId(null);
+                                setVoucherFile(null);
+                                setVoucherUrlInput('');
+                              }}
+                              className="px-3 py-1.5 text-xs text-charcoal-muted hover:text-charcoal"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUploadVoucher(b.id)}
+                              disabled={submittingVoucher || (!voucherFile && !voucherUrlInput.trim())}
+                              className="px-3.5 py-1.5 bg-sage-600 hover:bg-sage-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                            >
+                              {submittingVoucher ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Upload className="w-3.5 h-3.5" />
+                              )}
+                              Subir Comprobante
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between text-xs">
@@ -247,6 +276,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                           <button
                             onClick={() => {
                               setSelectedVoucherBookingId(b.id);
+                              setVoucherFile(null);
                               setVoucherUrlInput('');
                             }}
                             className="text-sage-700 hover:text-sage-900 font-bold underline"
@@ -255,6 +285,30 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                           </button>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* View attached voucher if available */}
+                  {b.voucherUrl && (
+                    <div className="pt-2 border-t border-sand-200 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-sage-800">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="font-semibold text-[11px]">Comprobante adjuntado</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setViewingVoucher({
+                            url: b.voucherUrl!,
+                            bookingCode: b.bookingCode,
+                            classTitle: b.schedule?.classType?.title,
+                          })
+                        }
+                        className="inline-flex items-center gap-1 text-sage-700 hover:text-sage-900 font-bold text-[11px] hover:underline"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Ver comprobante
+                      </button>
                     </div>
                   )}
 
@@ -275,6 +329,17 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Lightbox / Modal de Previsualización */}
+      {viewingVoucher && (
+        <VoucherPreviewModal
+          isOpen={true}
+          onClose={() => setViewingVoucher(null)}
+          voucherUrl={viewingVoucher.url}
+          bookingCode={viewingVoucher.bookingCode}
+          classTitle={viewingVoucher.classTitle}
+        />
+      )}
     </div>
   );
 };
