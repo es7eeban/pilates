@@ -1,5 +1,15 @@
 import React from 'react';
-import { LogOut, User as UserIcon, Shield, Sparkles, BookOpen, FileCheck, ClipboardList } from 'lucide-react';
+import {
+  LogOut,
+  User as UserIcon,
+  Shield,
+  Sparkles,
+  BookOpen,
+  FileCheck,
+  ClipboardList,
+  Building2,
+  Users,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
 
@@ -8,6 +18,8 @@ interface NavbarProps {
   onOpenMyBookings: () => void;
   onOpenAdminVouchers: () => void;
   onOpenAttendance: () => void;
+  onOpenAdminBranches: () => void;
+  onOpenAdminUsers: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMyBookings,
   onOpenAdminVouchers,
   onOpenAttendance,
+  onOpenAdminBranches,
+  onOpenAdminUsers,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -80,13 +94,34 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
 
               {user.role === 'ADMIN' && (
-                <button
-                  onClick={onOpenAdminVouchers}
-                  className="px-3 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition shadow-sm flex items-center gap-1.5"
-                >
-                  <FileCheck className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Validar Pagos</span>
-                </button>
+                <>
+                  <button
+                    onClick={onOpenAdminBranches}
+                    className="px-2.5 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-200 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                    title="Administrar sedes físicas"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-sage-600" />
+                    <span className="hidden md:inline">Sedes</span>
+                  </button>
+
+                  <button
+                    onClick={onOpenAdminUsers}
+                    className="px-2.5 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-200 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                    title="Administrar usuarios y roles"
+                  >
+                    <Users className="w-3.5 h-3.5 text-sage-600" />
+                    <span className="hidden md:inline">Usuarios</span>
+                  </button>
+
+                  <button
+                    onClick={onOpenAdminVouchers}
+                    className="px-2.5 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                    title="Validar transferencias bancarias"
+                  >
+                    <FileCheck className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Validar Pagos</span>
+                  </button>
+                </>
               )}
             </div>
           )}

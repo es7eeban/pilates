@@ -90,8 +90,136 @@ export const authApi = {
 };
 
 export const branchesApi = {
-  async getAll(): Promise<import('../types/schedule').Branch[]> {
-    const res = await fetch(`${API_BASE_URL}/branches`);
+  async getAll(includeInactive = false): Promise<import('../types/schedule').Branch[]> {
+    const res = await fetch(`${API_BASE_URL}/branches${includeInactive ? '?includeInactive=true' : ''}`);
+    return handleResponse(res);
+  },
+
+  async getById(id: string): Promise<import('../types/schedule').Branch> {
+    const res = await fetch(`${API_BASE_URL}/branches/${id}`);
+    return handleResponse(res);
+  },
+
+  async create(payload: import('../types/admin').CreateBranchPayload): Promise<import('../types/schedule').Branch> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/branches`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async update(id: string, payload: import('../types/admin').UpdateBranchPayload): Promise<import('../types/schedule').Branch> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/branches/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async remove(id: string): Promise<import('../types/schedule').Branch> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/branches/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+};
+
+export const usersApi = {
+  async getAll(params?: import('../types/admin').QueryUsersParams): Promise<import('../types/auth').User[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.role) query.append('role', params.role);
+    if (params?.isActive !== undefined) query.append('isActive', String(params.isActive));
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/users${qs}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async getInstructors(): Promise<import('../types/schedule').Instructor[]> {
+    const res = await fetch(`${API_BASE_URL}/users/instructors`);
+    return handleResponse(res);
+  },
+
+  async getById(id: string): Promise<import('../types/auth').User> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async create(payload: import('../types/admin').AdminCreateUserPayload): Promise<import('../types/auth').User> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async update(id: string, payload: import('../types/admin').AdminUpdateUserPayload): Promise<import('../types/auth').User> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async toggleActive(id: string): Promise<import('../types/auth').User> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/users/${id}/toggle-active`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return handleResponse(res);
   },
 };

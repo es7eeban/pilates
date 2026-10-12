@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck, Building2, Users } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
@@ -8,6 +8,8 @@ import { BookingModal } from './components/BookingModal';
 import { MyBookingsModal } from './components/MyBookingsModal';
 import { AdminVouchersModal } from './components/AdminVouchersModal';
 import { AttendanceModal } from './components/AttendanceModal';
+import { AdminBranchesModal } from './components/AdminBranchesModal';
+import { AdminUsersModal } from './components/AdminUsersModal';
 import type { ClassSchedule } from './types/schedule';
 
 function MainContent() {
@@ -19,6 +21,8 @@ function MainContent() {
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
   const [adminVouchersOpen, setAdminVouchersOpen] = useState(false);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [adminBranchesOpen, setAdminBranchesOpen] = useState(false);
+  const [adminUsersOpen, setAdminUsersOpen] = useState(false);
   const [catalogKey, setCatalogKey] = useState(0);
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
@@ -45,6 +49,8 @@ function MainContent() {
         onOpenMyBookings={() => setMyBookingsOpen(true)}
         onOpenAdminVouchers={() => setAdminVouchersOpen(true)}
         onOpenAttendance={() => setAttendanceOpen(true)}
+        onOpenAdminBranches={() => setAdminBranchesOpen(true)}
+        onOpenAdminUsers={() => setAdminUsersOpen(true)}
       />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-12 w-full">
@@ -89,13 +95,31 @@ function MainContent() {
                 )}
 
                 {user.role === 'ADMIN' && (
-                  <button
-                    onClick={() => setAdminVouchersOpen(true)}
-                    className="px-3.5 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition flex items-center gap-1.5"
-                  >
-                    <FileCheck className="w-3.5 h-3.5" />
-                    <span>Bandeja Admin</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setAdminBranchesOpen(true)}
+                      className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-300 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Building2 className="w-3.5 h-3.5 text-sage-600" />
+                      <span>Sedes</span>
+                    </button>
+
+                    <button
+                      onClick={() => setAdminUsersOpen(true)}
+                      className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-300 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Users className="w-3.5 h-3.5 text-sage-600" />
+                      <span>Usuarios</span>
+                    </button>
+
+                    <button
+                      onClick={() => setAdminVouchersOpen(true)}
+                      className="px-3.5 py-1.5 text-xs font-semibold bg-terra-light text-terra hover:bg-terra hover:text-white border border-terra/30 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <FileCheck className="w-3.5 h-3.5" />
+                      <span>Bandeja Admin</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -229,6 +253,18 @@ function MainContent() {
           setAttendanceOpen(false);
           handleRefreshSchedule();
         }}
+      />
+
+      <AdminBranchesModal
+        isOpen={adminBranchesOpen}
+        onClose={() => setAdminBranchesOpen(false)}
+        onBranchesUpdated={handleRefreshSchedule}
+      />
+
+      <AdminUsersModal
+        isOpen={adminUsersOpen}
+        onClose={() => setAdminUsersOpen(false)}
+        onUsersUpdated={handleRefreshSchedule}
       />
     </div>
   );
