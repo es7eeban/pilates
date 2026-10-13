@@ -611,3 +611,79 @@ export const notificationsApi = {
   },
 };
 
+export const waitlistApi = {
+  async join(scheduleId: string): Promise<{ message: string; entry: import('../types/waitlist').WaitlistEntry; waitlistCount: number; waitlistMax: number }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/join`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async accept(
+    scheduleId: string,
+    payload: { paymentMethod: import('../types/schedule').PaymentMethod; voucherUrl?: string },
+  ): Promise<{ message: string; booking: import('../types/schedule').Booking }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/accept`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async decline(scheduleId: string): Promise<{ success: boolean; message: string }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/decline`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async getMyStatus(scheduleId: string): Promise<import('../types/waitlist').WaitlistStatusResponse> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/status`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async getMyEntries(): Promise<import('../types/waitlist').WaitlistEntry[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/waitlist/my-entries`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse(res);
+  },
+
+  async getSummary(scheduleId: string): Promise<import('../types/waitlist').WaitlistSummaryResponse> {
+    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/summary`);
+    return handleResponse(res);
+  },
+};
+
+

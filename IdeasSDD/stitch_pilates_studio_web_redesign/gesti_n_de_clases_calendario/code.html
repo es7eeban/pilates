@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"primary-fixed-dim":"#e6b9de","on-secondary-fixed-variant":"#8f0043","secondary-container":"#fd4d8b","surface-bright":"#faf9f6","outline-variant":"#d0c3cb","on-surface":"#1a1c1a","on-tertiary-fixed-variant":"#254f37","inverse-on-surface":"#f2f1ee","tertiary-fixed":"#beeecd","on-secondary-container":"#590027","primary-fixed":"#ffd7f6","secondary-fixed-dim":"#ffb1c4","on-primary-container":"#aa81a3","surface-container-high":"#e9e8e5","surface":"#faf9f6","on-primary":"#ffffff","surface-variant":"#e3e2e0","on-tertiary-container":"#6b977a","background":"#faf9f6","surface-container-lowest":"#ffffff","on-secondary":"#ffffff","secondary":"#b80c5a","surface-tint":"#775273","on-tertiary-fixed":"#002110","on-surface-variant":"#4d444b","tertiary-container":"#002d18","tertiary-fixed-dim":"#a3d1b1","on-tertiary":"#ffffff","primary-container":"#3a1b38","inverse-surface":"#2f312f","on-error":"#ffffff","on-primary-fixed-variant":"#5e3b5a","on-primary-fixed":"#2e102c","primary":"#220622","error":"#ba1a1a","surface-container":"#efeeeb","outline":"#7f747b","error-container":"#ffdad6","surface-container-low":"#f4f3f0","surface-container-highest":"#e3e2e0","on-error-container":"#93000a","secondary-fixed":"#ffd9e0","on-background":"#1a1c1a","surface-dim":"#dbdad7","inverse-primary":"#e6b9de","on-secondary-fixed":"#3f001a","tertiary":"#001509"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xs":"0.25rem","space-sm":"0.5rem","margin":"2rem","space-lg":"1.5rem","gutter-mobile":"0.75rem","space-xl":"2.5rem","space-md":"1rem","margin-mobile":"1rem","gutter":"1.25rem"},"fontFamily":{"label-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"headline-lg":["Epilogue"],"headline-xl-mobile":["Epilogue"],"body-sm":["Plus Jakarta Sans"],"headline-xl":["Epilogue"],"headline-lg-mobile":["Epilogue"],"label-md":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"headline-md":["Epilogue"],"headline-sm":["Epilogue"]},"fontSize":{"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","letterSpacing":"0em","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"headline-xl-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"400"}],"headline-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"700"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"700"}],"headline-md":["22px",{"lineHeight":"30px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Pilates Studio Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR0u2JO4ZkibdTV-f69CGyt-xAtn98J-FxRaA1XUTHqrVDkG4dREQd3LRLP9fkn5dThZjaisxep3_OG6thxpVz-OwrqP0B3IwCjdYyVByiuBTVxHTIYsxWxB0xMdqiybBhJeLkn4aCMhRtJvuapptfs7QXHeDIjPbvlKM6jfH7Fbst40NBFF-eq3nzOikbxyEqj1SEC5AoLcZxdynfCMVpUqMAg0Un6cbZy-6DWui8tdO7T77jygsMQg"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary tracking-tight leading-none">Atelier Somatique</span><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Pilates &amp; Wellness</span></div></div><button class="p-space-xs text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">menu_open</span></button></div><div class="px-space-md py-space-sm"><div class="bg-surface-container p-space-sm rounded-lg"><div class="flex items-center justify-between mb-space-xs"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sede de Operación</span><span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">place</span></div><select class="w-full bg-surface-container-lowest font-label-md text-label-md text-on-surface rounded py-space-xs px-space-sm focus:outline-none"><option value="providencia">Sede Providencia</option><option value="las-condes">Sede Las Condes</option><option value="vitacura">Sede Vitacura</option></select></div></div><nav class="flex flex-col gap-space-xs px-space-md mt-space-sm" data-active-classes="bg-primary-container text-on-primary font-bold rounded-lg"><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="agenda-en-vivo" href="#">Agenda en Vivo</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="gestion-de-clases-y-calendario" href="#">Gestión de Clases &amp; Calendario</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="mi-asistencia-y-clases" href="#">Mi Asistencia &amp; Clases</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="sedes" href="#">Sedes</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="usuarios" href="#">Usuarios</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="validar-pagos" href="#">Validar Pagos</a><a class="flex items-center px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-path="bandeja-admin" href="#">Bandeja Admin</a></nav></div><div class="p-space-md"><div class="bg-surface-container-high p-space-sm rounded-lg flex items-center gap-space-sm"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col min-w-0 flex-1"><span class="font-label-md text-label-md text-on-surface truncate">Directora de Estudio</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">admin@atelier.cl</span></div><button class="text-on-surface-variant hover:text-secondary transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="w-full h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="inline-flex items-center bg-surface-container p-space-xs rounded-full"><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-all" type="button">Providencia</button><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button">Las Condes</button><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button">Vitacura</button></div><div class="hidden xl:flex items-center gap-space-xs bg-tertiary-fixed px-space-md py-space-xs rounded-full text-on-tertiary-fixed"><span class="material-symbols-outlined text-[16px]">speed</span><span class="font-label-sm text-label-sm font-semibold">Aforo General 92% • Alta demanda</span></div></div><div class="flex items-center gap-space-md"><button class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-secondary"></span></button><button class="hidden sm:flex items-center gap-space-xs px-space-md py-space-xs bg-secondary text-on-secondary rounded-full font-label-md text-label-md hover:bg-on-secondary-fixed-variant transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">add</span><span>Nuevo Bloque</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="px-margin py-space-lg flex flex-col gap-space-lg max-w-[1720px] mx-auto w-full">
+<!-- Top Administrative Header & Quick Stats Cluster -->
+<div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-space-md">
+<div>
+<div class="flex items-center gap-space-sm mb-space-xs">
+<span class="px-space-sm py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm uppercase tracking-wider font-semibold">Operaciones · Temporada Activa</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary-container animate-ping"></span> Sincronizado en tiempo real
+          </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Gestión de Clases &amp; Calendario Operativo</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 max-w-2xl">
+          Supervisión holística de cupos, asignación de equipamiento y suplencias docentes en sedes Providencia, Las Condes y Vitacura.
+        </p>
+</div>
+<!-- Live Operations Metric Chips -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm w-full xl:w-auto">
+<div class="bg-surface-container-lowest p-space-sm px-space-md rounded-xl shadow-sm flex flex-col justify-between min-w-[140px]">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sesiones Semana</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-md text-headline-md text-primary font-bold">48</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">+6 vs ant.</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-sm px-space-md rounded-xl shadow-sm flex flex-col justify-between min-w-[140px]">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Ocupación Media</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-md text-headline-md text-secondary font-bold">91.2%</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Cap. óptima</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-sm px-space-md rounded-xl shadow-sm flex flex-col justify-between min-w-[140px]">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Reasignadas/Canc.</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-md text-headline-md text-on-error-container font-bold">2</span>
+<span class="font-label-sm text-label-sm text-error font-semibold">1 suplencia</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-sm px-space-md rounded-xl shadow-sm flex flex-col justify-between min-w-[140px]">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Docentes en Turno</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-headline-md text-headline-md text-primary font-bold">7</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">100% disp.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Control Deck (Filters, Actions, View Switcher) -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Left Filters Strip -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Studio Venue Filter -->
+<div class="flex items-center bg-surface-container-low px-space-sm py-1 rounded-lg">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-1">location_on</span>
+<select class="bg-transparent font-label-md text-label-md text-primary focus:outline-none cursor-pointer pr-space-xs" id="filterSede">
+<option value="all">Todas las Sedes</option>
+<option selected="" value="providencia">Providencia (8 Reformers)</option>
+<option value="las-condes">Las Condes (12 Reformers)</option>
+<option value="vitacura">Vitacura (Mat &amp; Cadillac)</option>
+</select>
+</div>
+<!-- Discipline Filter -->
+<div class="flex items-center bg-surface-container-low px-space-sm py-1 rounded-lg">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-1">self_improvement</span>
+<select class="bg-transparent font-label-md text-label-md text-primary focus:outline-none cursor-pointer pr-space-xs" id="filterDisciplina">
+<option value="all">Cualquier Disciplina</option>
+<option value="reformer">Pilates Reformer</option>
+<option value="flow">Pilates Flow &amp; Core</option>
+<option value="cadillac">Cadillac Somático</option>
+<option value="mat">Classical Mat</option>
+</select>
+</div>
+<!-- Instructor Filter -->
+<div class="flex items-center bg-surface-container-low px-space-sm py-1 rounded-lg">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-1">person_search</span>
+<select class="bg-transparent font-label-md text-label-md text-primary focus:outline-none cursor-pointer pr-space-xs" id="filterDocente">
+<option value="all">Todos los Docentes</option>
+<option value="valeria">Valeria M. (Lead Master)</option>
+<option value="sofia">Sofía P. (Reformer)</option>
+<option value="camila">Camila R. (Restorative)</option>
+<option value="esteban">Esteban T. (Biomecánica)</option>
+</select>
+</div>
+<!-- Status Filter -->
+<div class="flex items-center bg-surface-container-low px-space-sm py-1 rounded-lg">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-1">tune</span>
+<select class="bg-transparent font-label-md text-label-md text-primary focus:outline-none cursor-pointer pr-space-xs" id="filterEstado">
+<option value="all">Todos los Estados</option>
+<option value="full">Aforo Completo (100%)</option>
+<option value="almost">Últimos Cupos</option>
+<option value="active">En Curso</option>
+<option value="cancelled">Cancelada / Alerta</option>
+</select>
+</div>
+</div>
+<!-- Right Action & Time-frame Strip -->
+<div class="flex items-center flex-wrap gap-space-sm justify-end">
+<!-- Date Navigator -->
+<div class="flex items-center bg-surface-container-low p-1 rounded-full">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<span class="font-label-md text-label-md px-space-sm text-primary font-bold">14 Oct – 20 Oct 2024</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<!-- View Segmenter -->
+<div class="inline-flex bg-surface-container-low p-1 rounded-full">
+<button class="px-space-sm py-1 rounded-full font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface" type="button">Día</button>
+<button class="px-space-md py-1 rounded-full font-label-sm text-label-sm bg-primary text-on-primary font-semibold shadow-sm" type="button">Semana</button>
+<button class="px-space-sm py-1 rounded-full font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface" type="button">Mes</button>
+</div>
+<!-- Batch Operations -->
+<button class="px-space-md py-2 rounded-full font-label-md text-label-md bg-surface-container text-primary hover:bg-surface-container-high transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+<span class="hidden sm:inline">Acciones en Bloque</span>
+</button>
+<!-- Primary Schedule CTA -->
+<button class="px-space-lg py-2 rounded-full font-label-md text-label-md bg-primary-container text-on-primary hover:bg-primary transition-all flex items-center gap-1.5 shadow-md" id="btnProgramarClase" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span class="font-bold tracking-tight">Programar Clase</span>
+</button>
+</div>
+</div>
+<!-- Main Schedule Grid & Inspect Drawer Layout -->
+<div class="flex flex-col lg:flex-row items-start gap-space-lg w-full relative">
+<!-- Left/Center: Seven-Day Somatic Calendar Grid -->
+<div class="flex-1 w-full bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Days of Week Header Strip -->
+<div class="grid grid-cols-8 bg-surface-container-low py-space-sm text-center">
+<div class="p-space-xs font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest flex items-center justify-center">
+            Hora
+          </div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Lun</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">14</span>
+</div>
+<div class="p-space-xs flex flex-col items-center bg-surface-container-lowest/80 rounded-lg">
+<span class="font-label-sm text-label-sm text-secondary uppercase font-bold">Mar (Hoy)</span>
+<span class="font-headline-sm text-headline-sm text-secondary font-bold">15</span>
+</div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Mié</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">16</span>
+</div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Jue</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">17</span>
+</div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Vie</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">18</span>
+</div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sáb</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">19</span>
+</div>
+<div class="p-space-xs flex flex-col items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Dom</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">20</span>
+</div>
+</div>
+<!-- Timetable Body Rows (Representative key operational slots: 07:00 to 20:00) -->
+<div class="divide-y-0 flex flex-col">
+<!-- Slot 07:30 -->
+<div class="grid grid-cols-8 min-h-[148px] bg-surface-container-lowest hover:bg-surface-container-low/40 transition-colors">
+<div class="p-space-sm text-right pr-space-md font-label-sm text-label-sm text-on-surface-variant font-mono pt-3">
+              07:30
+            </div>
+<!-- Lunes 07:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group" onclick="openClassInspector('reformer-lun-07')">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Alineación Esencial</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">07:30 - 08:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a professional female pilates instructor with hair neatly tied in a low chignon wearing deep plum somatic activewear in soft natural studio daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZbiHurwllfWdPFjTafzwiqGdSanHE2RXSkkK2SJkRVDf5bL0Yl7pmyWPZEtx1fOtZU-59PllbZ9MhI5KJ9tmM92vNCPi2kN7--Xl1fzCb4gOCh1LCoDh4rvOgf3jCWW97s_Isb_CSn-BrvdOZduX7avqzFG6OgDuzyUJu_UVxs8jpBzP-M8oJDeEHSv-PkmpPcr9vqrqULDDHtd3Z9RLOSR913ZZStkbZHcmFCQBbruPlWqCWt3KsZQ"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Valeria</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<!-- Capacity live bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Martes 07:30 (Selected Card Style) -->
+<div class="p-1">
+<div class="h-full bg-surface-container-high p-space-sm rounded-lg flex flex-col justify-between shadow-md ring-2 ring-primary transition-all cursor-pointer relative" onclick="openClassInspector('reformer-mar-07')">
+<div class="absolute -top-1.5 right-2 px-1.5 py-0.2 rounded bg-primary text-on-primary font-label-sm text-[9px] uppercase tracking-wider font-bold">Inspección</div>
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-primary-fixed text-on-primary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer II</span>
+<button class="text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Dynamic Reformer</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">07:30 - 08:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a female somatic trainer smiling warmly with natural minimal makeup in architectural serene pilates studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbcC4vmG7kYuPATKgg-M7a_4APeGFmF59_wSAfiw9-7XzPJpTGw5p0Ou8UNIfXxfxDGMJ0FxcgJhE7DkTP1KNQV7gkGr3UtVEMTXpdJOWwT5L4S35ueQTvBPMHHq_lDlchpsr9cE3cJfWR84_caeFEAJdgSsWREUkOO9VQJBS_MLZ3fFlG7NHwHCRcmliIvoIWVR1-sEez-uBQhDOg5iBFnvJmnlD3FK4gfjnc1PhnE-dozwoyoC0W_w"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Sofía P.</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-bold">7/8 Cupos</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary w-[87%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Miércoles 07:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group" onclick="openClassInspector('flow-mie-07')">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Mat Flow</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Core &amp; Descompresión</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">07:30 - 08:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Studio portrait of a focused athletic male instructor with clean haircut wearing deep charcoal athletic tank in bright warm minimalist gym" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZgfx41hiwTJqKPmVmTecYE6DHaoW1sPtVaSfrQ8lwcz8hIgXX3J_T-qJJ4ZuiTKTlsxLJO4T6edAEiaBwV0Z2l4094o1wDQV015EmIeDzgrymHfdYUUboeNJomTJT1ZHPB_27dnG9upB9c6qrbCY4Hwv6Lpiw6uD_92YVZUSWj0e3-bTor2DiBVBI1nRSr616ci-4y-WJmXabJ4ugW3DKKdP7rln6jXJCpku--0sr3w2KCWdVNs5BPQ"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Esteban</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">12/12</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Jueves 07:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Alineación Esencial</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">07:30 - 08:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a professional female pilates instructor with hair neatly tied in a low chignon wearing deep plum somatic activewear in soft natural studio daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF9uSOJddz5tpYArSxrTXhKGs6vQCk4ETis2ZJKXb3RUVLYr3DzC4qH3xpDFXzF_qoY-nOOwDJB_BgYrvubbC59vb2DAgYpZi4uYSFzQG35HTdT68IGDaRtMcqr0ur1WV6Ssz04uBYfKTksBuW9ETgSQzt2HaLSo-AAYCR2DRdYWLv8dAxxQLIxxpAQ-A9tDBIWvkHv-FHRtt5QHL8-z3F0rIyueD4G55sIRHADR2owQzc441kGedruA"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Valeria</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">6/8</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary w-[75%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Viernes 07:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-primary-fixed text-on-primary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Dynamic Reformer</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">07:30 - 08:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a female somatic trainer smiling warmly with natural minimal makeup in architectural serene pilates studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6wmrOwjwwaWZSh-rrI74dahqxQ8PPJ7oPXn4N2xbVtZOysfeU1frs6zDtdttp3CNYEwKHwrAOiz3l7F6Zsg-XaVtliRXZpT24UCIw-Jsd27aHuvMGljLKqJWQdSSQSzxWWdzxENEDrJ_WkQ-jeZ-JLjuDPPl7XcFdTw9iifmeH-eYSe-dlDaFFFgmL72UT5qdPXG8O1Lg2Sx6tQr9hKZ-tVOtKC75Ifbeef7cujg0wdQyUkWHQ2IaIQ"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Sofía P.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Sábado 07:30 (Empty Slot / Prep) -->
+<div class="p-1 flex items-center justify-center bg-surface-container-lowest/30 rounded-lg border-dashed">
+<span class="font-label-sm text-label-sm text-outline-variant font-light italic">Apertura 08:30</span>
+</div>
+<!-- Domingo 07:30 (Mantenimiento) -->
+<div class="p-1 flex items-center justify-center bg-surface-container-low/20 rounded-lg">
+<span class="font-label-sm text-label-sm text-outline-variant font-light italic">Cerrado</span>
+</div>
+</div>
+<!-- Slot 09:30 -->
+<div class="grid grid-cols-8 min-h-[148px] bg-surface-container-lowest hover:bg-surface-container-low/40 transition-colors">
+<div class="p-space-sm text-right pr-space-md font-label-sm text-label-sm text-on-surface-variant font-mono pt-3">
+              09:30
+            </div>
+<!-- Lunes 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-secondary-fixed text-on-secondary-fixed font-semibold px-2 py-0.5 rounded-full">Cadillac</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Cadillac Somático I</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait of an experienced senior female somatic movement therapist with serene calm expression against cream linen curtains" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANwdbAfZabKDY3BjnrsoqCGpBH0AwVKPQX-y-mfRenyEhnAKfMU64_M29tMC1QadFSJpd55p9rRc4scFTB_mbWrc0XMr1Koqeq2ca41RmIb6zqldwqSDynEC1VsS7CWmnTxau6jacTeURG_TAZ9bjShEwKpFeCdIpp99KkpV2PoZK9AeaqrFcNvjwIRro2gYkDNdrn5ODpQRrKynIEAWTfFpqYfCORElnhpLA8sgTexL8i2a5oomc40w"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Camila R.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">4/4</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Martes 09:30 (CANCELLED / REASSIGNED DEMO) -->
+<div class="p-1">
+<div class="h-full bg-error-container/40 p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group" onclick="openClassInspector('cancelled-mar-09')">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-error text-on-error font-semibold px-2 py-0.5 rounded-full">Cancelada</span>
+<span class="material-symbols-outlined text-[16px] text-error">warning</span>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-error text-[14px] leading-tight font-bold line-through">Reformer Jumpboard</h4>
+<p class="font-body-sm text-body-sm text-on-error-container text-[11px] leading-tight mt-0.5">Falla resorte Torre #3</p>
+</div>
+<div class="flex items-center justify-between pt-1 text-on-error-container">
+<span class="font-label-sm text-label-sm font-semibold">Créditos devueltos</span>
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-error/20 overflow-hidden">
+<div class="h-full bg-error w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Miércoles 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Alineación Esencial</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a professional female pilates instructor with hair neatly tied in a low chignon wearing deep plum somatic activewear in soft natural studio daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNFxK2w--UC_BOdptFRux5swEC_B8rpIOcxDu_SQIie1nHs4NBOVX5cDOgShMUOBzmeauY_D-8_gNWZUcYQYZnGEcaHW_1QOhSc2ouDCNi3BWpeQd6lJTC3J2TIZN4-iU9SbisHiJZO-aREWCMH2YdjkJiBO8AY9IGJIDwLCAlubzOPYKjjlheabbVVfdyIgjApPYVhnsY8bZ8GC7pU6tR2o3n1H6Q-RpaDdM5iSupx1vG-UgKmSf7tw"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Valeria</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-bold">¡Último cupo! (7/8)</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-secondary w-[88%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Jueves 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-secondary-fixed text-on-secondary-fixed font-semibold px-2 py-0.5 rounded-full">Cadillac</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Cadillac Somático I</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait of an experienced senior female somatic movement therapist with serene calm expression against cream linen curtains" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCN4RH1EASvqzMShDUTKqs_eiQzYiAnI3x7SQMbOrjG3kzrVouhG64EX8_qJ-Ls5XPY7uQvXuyCMHjRAWHRtRn4iA61qfviQnMM12C0ObrAfyVUwrFwQGCr_zkpQlunKvWWOxirIdRV_pdUmhrJ8iZNVhhxLEW2pJZhlXp-UyInEEdP8qVxyJSnMkaVOSDDbyKlAUySd1j2hJCUozfL31AwpqjD_WwytzCFLN9cxbhpUcikny1vl1phww"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Camila R.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">3/4</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary w-[75%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Viernes 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Flow &amp; Estabilidad</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a female somatic trainer smiling warmly with natural minimal makeup in architectural serene pilates studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2xvvxwJZjxVZH46AQSFDE3hbAmfkd3Q74If_yDZrZjICBsJm-RXIDdO63ECAO--5DriXKLZDLneapcJap0fhfIcA0HvkopPYwwJiibmK3IrsfT7DTDt2YGXFFGU5rQFBcUzUcL8Ci8Zota2RjvX_60HFqwqsI66gOO2DF_KT9ZCpdXBUrY6iPQAAmbXFhrt5-jlH5XPVTA8hAmS-ZPvK6pnouW8o7i6OH3zjol_g6J77CiFs_hiAMBg"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Sofía P.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Sábado 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-primary-fixed text-on-primary-fixed font-semibold px-2 py-0.5 rounded-full">Masterclass</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Somatic Weekend Flow</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:45 (75m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a professional female pilates instructor with hair neatly tied in a low chignon wearing deep plum somatic activewear in soft natural studio daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlt8R0R75jp574zeGTx22NxJLellJCICuNBDsCNaPDjmitgKN8-XFStzMHs69Sbm_t33xsZai3svLJD775VM28_lwRaqYWCE4PdSIbGVnnTgtDNzGylEmkIcVaMxuneU-loBFxyRpH_DCjx6Py30zzW45-pI9_hfUFuj7t9K6BTeH18nbcHWXDCLWxKeLOmdVNkr5kB2md2JKUcWezBT4fg7TWFsHcbR524UoqG3XOmXdadA0OPcIdpQ"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Valeria</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">14/14 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Domingo 09:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Restorative</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Fascia &amp; Respiración</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">09:30 - 10:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait of an experienced senior female somatic movement therapist with serene calm expression against cream linen curtains" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeBkl3A8R61MFyGZEwMelhrUDkU-hjv7lL1G8WSeHPl5pumg-ysCoBcWZZYMjkPqZEUWVFxyJZU3LpDKXSMBsiX65wMdzmtiA_eKolJFBNesVIt9mC19O8ohHATiTzq8K7EenUzI0UjPPEZlEpsdNwfL7dMWM3e1O56m82zZ-QP45LXbg8vTWuZF7q0YVlpGdkXR7B64FToZYMcOjyI3IMmMX3n8aEZ2bVlYNyZfPXlKvlHz8IlJdv7w"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Camila R.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">6/10</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-primary w-[60%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Slot 18:30 (Evening Peak) -->
+<div class="grid grid-cols-8 min-h-[148px] bg-surface-container-lowest hover:bg-surface-container-low/40 transition-colors">
+<div class="p-space-sm text-right pr-space-md font-label-sm text-label-sm text-on-surface-variant font-mono pt-3">
+              18:30
+            </div>
+<!-- Lun 18:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Power Core Reformer</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">18:30 - 19:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a female somatic trainer smiling warmly with natural minimal makeup in architectural serene pilates studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPg9VXmWfgWeHlEFLjvX0ce0rcRCfHq9ZM8tK5LIT1kd9-iQakjMoVs5AUS38mJU3kkTvLHu7AJyWl3pffjy9A8zTqEPxouHieXCnAV5F077cjmltShDuJ1YGYj1Q0myXvY7kMerHEKlBzyW7RT9PujGOrms_kZ5TNLoalnXzepeF7IKiC25EMUC7abGR8nq-B4bll2IEflZCheOKo3WOn9H7EO5QGkK4bD1dFq7o4idjfdzuh143QRw"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Sofía P.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Mar 18:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Mat &amp; Props</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Biomecánica Postural</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">18:30 - 19:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Studio portrait of a focused athletic male instructor with clean haircut wearing deep charcoal athletic tank in bright warm minimalist gym" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYH7o9zoBH8wPqfcdm9A8QJouUeLI6aiQ4KzzqJpLKpJxA5pob2XboNbh3hoT6zp1et-piFsMzOwpKnc3kg-wZ6hnNm0s6-AphBsS88vJnfkT5J5xNtN4bEBS3ZQyZsW-T8bLZFm4jUnl2UsCwS0IvBCNuCnQCvS_bntSVRmkeUZ5M3WXRWo0pYG0FoBRLyVEGxU_NccbDOB57nurHt7YqQGsnOGv4Z6m1IVSsKnjcdME7senrj9T3kg"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Esteban</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">12/12</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Mie 18:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Power Core Reformer</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">18:30 - 19:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait photo of a professional female pilates instructor with hair neatly tied in a low chignon wearing deep plum somatic activewear in soft natural studio daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJrsbH1NGgQDhPnFmR6GZ6mDTQuWuxf8uIHjumnLzrGN6bqi5fisvaUzg3WCZSJ-dBkjRc_Uz_XFsYQ4Zk-j5lnVhAjQDQyaokzxoA--a-v4sHVcp5luX4scKJLPT2MAgl78jr9ZbOA3u4r7vdxf316RLqWC90ONToxgEasDMOKdhsPAqkNDDpK7s-XgCAXM5wGv-F-A68M11iJmHO0n18jOmysIul9cwPqo44d00NS-lwZjZHnbMd4w"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Valeria</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Jue 18:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed font-semibold px-2 py-0.5 rounded-full">Mat &amp; Props</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Biomecánica Postural</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">18:30 - 19:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Studio portrait of a focused athletic male instructor with clean haircut wearing deep charcoal athletic tank in bright warm minimalist gym" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa_rFtixF5qYSetirDq2_irXeo2TI0sD9vyQD6rl8OM1vihuL8aoLylVAkP9w_CSgEltgB5i8G0HS49NYlzs1yD34YYXopmxEbvVlr2BTJmoGprgTEa3qlVmnhcmGiiPwWqTkxVx07D7bVr_tx6ZglHctG-g4hqhgmnSFquDx2hG-usI1j0XxaueJ6HargIZgbxn-TmyXN-PvdELFkcUMbh59vrEHzTSc8muQ_7RYyVahygQcxziS0sA"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Esteban</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">11/12</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-[91%] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Vie 18:30 -->
+<div class="p-1">
+<div class="h-full bg-surface-container-low p-space-sm rounded-lg flex flex-col justify-between hover:shadow-md transition-all cursor-pointer group">
+<div class="flex items-start justify-between gap-1">
+<span class="font-label-sm text-label-sm bg-primary-fixed text-on-primary-fixed font-semibold px-2 py-0.5 rounded-full">Reformer Sunset</span>
+<button class="text-on-surface-variant opacity-40 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[16px]">more_vert</span>
+</button>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-primary text-[14px] leading-tight font-bold">Restaurativo Espinal</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">18:30 - 19:25 (55m)</p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1">
+<div class="w-5 h-5 rounded-full overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Portrait of an experienced senior female somatic movement therapist with serene calm expression against cream linen curtains" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiSrFj96D1T55aXfuVgR3g4o5rS4QOgLmAlGmMUXrVvza36WiC4y0gIvRd3gBzgL3xjsDMJsTOhbNuhF35iXhhP1GU9nsDVAwZ4x2dFO7yUfxYrDNOsF2wVzUAzTZ1wxMnwMbMc23xE2TqsOobsMd-FxM5OD_XrE6eYCLIbqxP2LbiS9HFTopTQAH_cN4Tjasq8fGqnc_SZ_JZ0u8TbzMzv_msLPCG_OMORW1-kt5HbVhaxswIg1PqOg"/>
+</div>
+<span class="font-label-sm text-label-sm text-primary truncate max-w-[55px]">Camila R.</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-bold">8/8 Full</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Sáb 18:30 -->
+<div class="p-1 flex items-center justify-center bg-surface-container-low/30 rounded-lg">
+<span class="font-label-sm text-label-sm text-outline-variant font-light italic">Sin actividad</span>
+</div>
+<!-- Dom 18:30 -->
+<div class="p-1 flex items-center justify-center bg-surface-container-low/30 rounded-lg">
+<span class="font-label-sm text-label-sm text-outline-variant font-light italic">Sin actividad</span>
+</div>
+</div>
+</div>
+<!-- Timetable Footer Legend -->
+<div class="bg-surface-container-low px-space-md py-space-sm flex flex-wrap items-center justify-between gap-space-sm border-t-0">
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-on-tertiary-container"></span> Aforo Completo (8/8)
+            </span>
+<span class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> Últimos cupos disponibles
+            </span>
+<span class="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-error"></span> Sesión suspendida o mantenimiento
+            </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+            Haz clic en cualquier bloque para inspeccionar asistencias médicas y suplencias.
+          </span>
+</div>
+</div>
+<!-- Right Side: Fast Inspection Panel / Detail Drawer -->
+<div class="w-full lg:w-[410px] bg-surface-container-lowest rounded-xl shadow-md p-space-md flex flex-col gap-space-md flex-shrink-0" id="inspectorDrawer">
+<!-- Header with Close & Status -->
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-space-xs mb-1">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold">En Curso · Confirmada</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sede Providencia</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-primary font-bold" id="inspectedTitle">Dynamic Reformer II</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant" id="inspectedSchedule">Martes 15 Octubre · 07:30 a 08:25 (55 min)</p>
+</div>
+<button class="p-1 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" onclick="closeInspector()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Instructor Reassignment Modular Box -->
+<div class="bg-surface-container p-space-sm rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Profesor Titular Asignado</span>
+<button class="font-label-sm text-label-sm text-secondary hover:underline font-bold" onclick="alert('Permiso de reasignación docente abierto. Notificando a docentes disponibles...')" type="button">
+              Cambiar Suplente
+            </button>
+</div>
+<div class="flex items-center gap-space-sm pt-1">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a female somatic trainer smiling warmly with natural minimal makeup in architectural serene pilates studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVq8WkQ421Gk9PBaFMEKXTcvOJ0PLPSZ4cA6CI9W9I8_wQBQdMgn4kbXHXF8MIqLw-c6MK_EVyzCOGqaOzyZ-FJM6hPlCGEn7wmbwRTalTl0RGP1rNyRcDfAeGfu0WXmGFcgszhQF1exZ5NqHYCjX9p-23SdRwJz2MsTkn7B9KKOpSPBCWHNhKpeFhncFXLzTVYAkGNKLqwrywuUrVBHKs5kuLLcFuJey2FcNxZ7PQjHCjYrEt2RmZLA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-primary font-bold truncate">Sofía Pardo Alarcón</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant text-[12px] truncate">Certificación Clásica &amp; Somatics NY · 4.98 ★</span>
+</div>
+</div>
+</div>
+<!-- Attendance & Medical Intake List -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-primary font-bold">Alumnos Inscritos</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">7 / 8</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pase Somático / Check-in</span>
+</div>
+<!-- Roster list with medical flags and instant check-in -->
+<div class="flex flex-col gap-1 max-h-[310px] overflow-y-auto pr-1">
+<!-- Pupil 1 -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-medium">María Paz Edwards</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Plan Semestral · 34 asistencias</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">Asistió</span>
+</div>
+<!-- Pupil 2 (Medical Precaution Alert) -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-primary font-medium">Ignacio Valenzuela</span>
+<span class="material-symbols-outlined text-[14px] text-error" title="Hernia L4-L5: evitar flexión excesiva">medical_services</span>
+</div>
+<span class="font-label-sm text-label-sm text-error font-medium">Precaución: Hernia L4-L5</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">Asistió</span>
+</div>
+<!-- Pupil 3 -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-medium">Camila Urzúa</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pack 10 Clases</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Pendiente</span>
+</div>
+<!-- Pupil 4 (Pregnant note) -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-primary font-medium">Francisca Lyon</span>
+<span class="material-symbols-outlined text-[14px] text-secondary" title="Prenatal trimestre 2">pregnant_woman</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Prenatal T2 (Cuña lista)</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">Asistió</span>
+</div>
+<!-- Pupil 5 -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-medium">Benjamín Vial</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pase Ilimitado Gold</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Pendiente</span>
+</div>
+<!-- Pupil 6 -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-medium">Trinidad Monckeberg</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Membresía Studio Duo</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">Asistió</span>
+</div>
+<!-- Pupil 7 -->
+<div class="p-space-xs px-space-sm bg-surface-container-low hover:bg-surface-container transition-colors rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 cursor-pointer accent-secondary" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-medium">Loreto Silva G.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pack 10 Clases</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm">Asistió</span>
+</div>
+</div>
+</div>
+<!-- Class Modification Actions (Admin Controls) -->
+<div class="flex flex-col gap-space-xs pt-2">
+<div class="grid grid-cols-2 gap-space-xs">
+<button class="p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-primary flex items-center justify-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_calendar</span>
+              Modificar Cupos
+            </button>
+<button class="p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-primary flex items-center justify-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+              Duplicar Bloque
+            </button>
+</div>
+<!-- Cancellation Button with automatic refund logic triggers -->
+<button class="w-full py-2.5 px-space-md rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error transition-all font-label-md text-label-md font-bold flex items-center justify-center gap-2 mt-1" id="btnOpenCancelModal" type="button">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+            Cancelar Sesión &amp; Reembolsar Créditos
+          </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal: Programar Nueva Clase Operativa (Hidden by default, triggered via script) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-space-md" id="modalNuevaClase">
+<div class="bg-surface-container-lowest max-w-lg w-full rounded-2xl shadow-xl overflow-hidden flex flex-col">
+<div class="bg-surface-container-low p-space-md flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">calendar_add_on</span>
+<h3 class="font-headline-sm text-headline-sm text-primary font-bold">Programar Nueva Clase</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface" onclick="closeScheduleModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="p-space-lg flex flex-col gap-space-md">
+<!-- Sede & Disciplina -->
+<div class="grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sede Somática</label>
+<select class="p-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none">
+<option>Sede Providencia</option>
+<option>Sede Las Condes</option>
+<option>Sede Vitacura</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Disciplina &amp; Nivel</label>
+<select class="p-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none">
+<option>Pilates Reformer I</option>
+<option>Pilates Reformer II</option>
+<option>Cadillac Somático</option>
+<option>Classical Mat Flow</option>
+</select>
+</div>
+</div>
+<!-- Instructor & Cupos -->
+<div class="grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Profesor Asignado</label>
+<select class="p-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none">
+<option>Valeria Mardones</option>
+<option>Sofía Pardo</option>
+<option>Camila Reyes</option>
+<option>Esteban Toledo</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Aforo Máximo (Cupos)</label>
+<input class="p-2 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none" max="16" min="1" type="number" value="8"/>
+</div>
+</div>
+<!-- Horario & Duración -->
+<div class="grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Fecha y Hora Inicio</label>
+<input class="p-2 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none" type="datetime-local" value="2024-10-16T08:30"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Duración Bloque</label>
+<select class="p-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none">
+<option>55 minutos (Estándar)</option>
+<option>75 minutos (Masterclass)</option>
+<option>45 minutos (Express)</option>
+</select>
+</div>
+</div>
+<!-- Recurrencia semanal check -->
+<div class="flex items-center gap-space-sm p-space-sm bg-surface-container-low rounded-lg">
+<input checked="" class="w-4 h-4 rounded text-secondary focus:ring-0 accent-secondary" id="checkRecurrente" type="checkbox"/>
+<label class="font-label-md text-label-md text-primary cursor-pointer" for="checkRecurrente">
+            Repetir semanalmente por las próximas 4 semanas
+          </label>
+</div>
+</div>
+<div class="p-space-md bg-surface-container-low flex items-center justify-end gap-space-sm">
+<button class="px-space-md py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeScheduleModal()" type="button">
+          Cancelar
+        </button>
+<button class="px-space-lg py-2 rounded-full font-label-md text-label-md bg-primary-container text-on-primary hover:bg-primary font-bold shadow-md transition-all" onclick="saveNewClass()" type="button">
+          Publicar en Calendario
+        </button>
+</div>
+</div>
+</div>
+<!-- Modal: Confirmar Cancelación Preventiva con Notificación Directa -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-space-md" id="modalCancelClass">
+<div class="bg-surface-container-lowest max-w-md w-full rounded-2xl shadow-xl overflow-hidden flex flex-col">
+<div class="p-space-lg flex flex-col items-center text-center gap-space-sm">
+<div class="w-12 h-12 rounded-full bg-error-container text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">emergency_home</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary font-bold">¿Suspender esta sesión?</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">
+          Se notificará por WhatsApp y correo a los <strong class="text-primary font-semibold">7 alumnos inscritos</strong> y se acreditará inmediatamente su token de clase de forma automática.
+        </p>
+<div class="w-full text-left flex flex-col gap-1 mt-space-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Motivo de la cancelación</label>
+<select class="w-full p-2.5 bg-surface-container-low rounded-lg font-body-md text-body-md text-primary focus:outline-none">
+<option>Mantenimiento urgente de Reformers</option>
+<option>Baja médica del docente sin suplencia</option>
+<option>Corte imprevisto en suministros del estudio</option>
+<option>Feriado operativo extraordinario</option>
+</select>
+</div>
+</div>
+<div class="p-space-md bg-surface-container-low flex items-center justify-end gap-space-sm">
+<button class="px-space-md py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface" onclick="closeCancelModal()" type="button">
+          Volver atrás
+        </button>
+<button class="px-space-lg py-2 rounded-full font-label-md text-label-md bg-error text-on-error hover:bg-on-error-container font-bold shadow-md transition-all" onclick="confirmCancelClass()" type="button">
+          Confirmar y Reembolsar
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function openClassInspector(classId) {
+    const drawer = document.getElementById('inspectorDrawer');
+    if (!drawer) return;
+    drawer.classList.remove('hidden');
+    drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeInspector() {
+    const drawer = document.getElementById('inspectorDrawer');
+    if (drawer) {
+      drawer.classList.add('hidden');
+    }
+  }
+
+  const btnProgramar = document.getElementById('btnProgramarClase');
+  const modalNuevaClase = document.getElementById('modalNuevaClase');
+  const btnOpenCancel = document.getElementById('btnOpenCancelModal');
+  const modalCancel = document.getElementById('modalCancelClass');
+
+  if (btnProgramar && modalNuevaClase) {
+    btnProgramar.addEventListener('click', () => {
+      modalNuevaClase.classList.remove('hidden');
+      modalNuevaClase.classList.add('flex');
+    });
+  }
+
+  function closeScheduleModal() {
+    if (modalNuevaClase) {
+      modalNuevaClase.classList.add('hidden');
+      modalNuevaClase.classList.remove('flex');
+    }
+  }
+
+  function saveNewClass() {
+    alert('Clase programada con éxito en la sede seleccionada.');
+    closeScheduleModal();
+  }
+
+  if (btnOpenCancel && modalCancel) {
+    btnOpenCancel.addEventListener('click', () => {
+      modalCancel.classList.remove('hidden');
+      modalCancel.classList.add('flex');
+    });
+  }
+
+  function closeCancelModal() {
+    if (modalCancel) {
+      modalCancel.classList.add('hidden');
+      modalCancel.classList.remove('flex');
+    }
+  }
+
+  function confirmCancelClass() {
+    alert('Sesión cancelada. Se han emitido 7 reembolsos automáticos y notificaciones por WhatsApp.');
+    closeCancelModal();
+  }
+</script></main></div></body></html>

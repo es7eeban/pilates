@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"primary-fixed-dim":"#e6b9de","on-secondary-fixed-variant":"#8f0043","secondary-container":"#fd4d8b","surface-bright":"#faf9f6","outline-variant":"#d0c3cb","on-surface":"#1a1c1a","on-tertiary-fixed-variant":"#254f37","inverse-on-surface":"#f2f1ee","tertiary-fixed":"#beeecd","on-secondary-container":"#590027","primary-fixed":"#ffd7f6","secondary-fixed-dim":"#ffb1c4","on-primary-container":"#aa81a3","surface-container-high":"#e9e8e5","surface":"#faf9f6","on-primary":"#ffffff","surface-variant":"#e3e2e0","on-tertiary-container":"#6b977a","background":"#faf9f6","surface-container-lowest":"#ffffff","on-secondary":"#ffffff","secondary":"#b80c5a","surface-tint":"#775273","on-tertiary-fixed":"#002110","on-surface-variant":"#4d444b","tertiary-container":"#002d18","tertiary-fixed-dim":"#a3d1b1","on-tertiary":"#ffffff","primary-container":"#3a1b38","inverse-surface":"#2f312f","on-error":"#ffffff","on-primary-fixed-variant":"#5e3b5a","on-primary-fixed":"#2e102c","primary":"#220622","error":"#ba1a1a","surface-container":"#efeeeb","outline":"#7f747b","error-container":"#ffdad6","surface-container-low":"#f4f3f0","surface-container-highest":"#e3e2e0","on-error-container":"#93000a","secondary-fixed":"#ffd9e0","on-background":"#1a1c1a","surface-dim":"#dbdad7","inverse-primary":"#e6b9de","on-secondary-fixed":"#3f001a","tertiary":"#001509"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xs":"0.25rem","space-sm":"0.5rem","margin":"2rem","space-lg":"1.5rem","gutter-mobile":"0.75rem","space-xl":"2.5rem","space-md":"1rem","margin-mobile":"1rem","gutter":"1.25rem"},"fontFamily":{"label-lg":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"headline-lg":["Epilogue"],"headline-xl-mobile":["Epilogue"],"body-sm":["Plus Jakarta Sans"],"headline-xl":["Epilogue"],"headline-lg-mobile":["Epilogue"],"label-md":["Plus Jakarta Sans"],"label-sm":["Plus Jakarta Sans"],"headline-md":["Epilogue"],"headline-sm":["Epilogue"]},"fontSize":{"label-lg":["14px",{"lineHeight":"20px","letterSpacing":"0.01em","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","letterSpacing":"0em","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"600"}],"headline-xl-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"body-sm":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"400"}],"headline-xl":["48px",{"lineHeight":"56px","letterSpacing":"-0.03em","fontWeight":"700"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"700"}],"headline-md":["22px",{"lineHeight":"30px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"26px","letterSpacing":"0em","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Pilates Studio Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR0u2JO4ZkibdTV-f69CGyt-xAtn98J-FxRaA1XUTHqrVDkG4dREQd3LRLP9fkn5dThZjaisxep3_OG6thxpVz-OwrqP0B3IwCjdYyVByiuBTVxHTIYsxWxB0xMdqiybBhJeLkn4aCMhRtJvuapptfs7QXHeDIjPbvlKM6jfH7Fbst40NBFF-eq3nzOikbxyEqj1SEC5AoLcZxdynfCMVpUqMAg0Un6cbZy-6DWui8tdO7T77jygsMQg"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary tracking-tight leading-none">Atelier Somatique</span><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Pilates &amp; Wellness</span></div></div><button class="p-space-xs text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">menu_open</span></button></div><div class="px-space-md py-space-sm"><div class="bg-surface-container p-space-sm rounded-lg"><div class="flex items-center justify-between mb-space-xs"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sede de Operación</span><span class="material-symbols-outlined text-[16px] text-tertiary-fixed-dim">place</span></div><select class="w-full bg-surface-container-lowest font-label-md text-label-md text-on-surface rounded py-space-xs px-space-sm focus:outline-none"><option value="providencia">Sede Providencia</option><option value="las-condes">Sede Las Condes</option><option value="vitacura">Sede Vitacura</option></select></div></div><nav class="flex flex-col gap-space-xs px-space-md mt-space-sm" data-active-classes="bg-primary-container text-on-primary font-bold rounded-lg"><a aria-current="page" class="flex items-center gap-space-sm px-space-md py-space-sm transition-all bg-primary-container text-on-primary font-bold rounded-lg" data-path="agenda-en-vivo" href="#"><span class="material-symbols-outlined text-[20px]">calendar_month</span><span class="font-label-lg text-label-lg">Agenda en Vivo</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="mis-reservas" href="#"><span class="material-symbols-outlined text-[20px]">book_online</span><span class="font-label-lg text-label-lg">Mis Reservas</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="asistencia-y-clases" href="#"><span class="material-symbols-outlined text-[20px]">fitness_center</span><span class="font-label-lg text-label-lg">Asistencia &amp; Clases</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="sedes" href="#"><span class="material-symbols-outlined text-[20px]">apartment</span><span class="font-label-lg text-label-lg">Sedes</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-label-lg text-label-lg">Usuarios</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="validar-pagos" href="#"><span class="material-symbols-outlined text-[20px]">payments</span><span class="font-label-lg text-label-lg">Validar Pagos</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="bandeja-admin" href="#"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span><span class="font-label-lg text-label-lg">Bandeja Admin</span></a></nav></div><div class="p-space-md"><div class="bg-surface-container-high p-space-sm rounded-lg flex items-center gap-space-sm"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="flex flex-col min-w-0 flex-1"><span class="font-label-md text-label-md text-on-surface truncate">Directora de Estudio</span><span class="font-label-sm text-label-sm text-on-surface-variant truncate">admin@atelier.cl</span></div><button class="text-on-surface-variant hover:text-secondary transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">logout</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="w-full h-16 px-gutter flex items-center justify-between"><div class="flex items-center gap-space-md"><div class="inline-flex items-center bg-surface-container p-space-xs rounded-full"><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-all" type="button">Providencia</button><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button">Las Condes</button><button class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" type="button">Vitacura</button></div><div class="hidden xl:flex items-center gap-space-xs bg-tertiary-fixed px-space-md py-space-xs rounded-full text-on-tertiary-fixed"><span class="material-symbols-outlined text-[16px]">speed</span><span class="font-label-sm text-label-sm font-semibold">Aforo General 92% • Alta demanda</span></div></div><div class="flex items-center gap-space-md"><button class="relative p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-secondary"></span></button><button class="hidden sm:flex items-center gap-space-xs px-space-md py-space-xs bg-secondary text-on-secondary rounded-full font-label-md text-label-md hover:bg-on-secondary-fixed-variant transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">add</span><span>Nuevo Bloque</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Macro Container with Editorial Wellness Framing -->
+<div class="px-margin-mobile md:px-margin py-space-md flex flex-col gap-space-md">
+<!-- Top Status & Realtime Sync Micro-bar -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm bg-surface-container-lowest p-space-sm rounded-xl shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary"></span>
+</span>
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Agenda en Vivo</span>
+<span class="text-outline-variant">•</span>
+<span class="font-body-sm text-body-sm text-on-surface">Sincronización PostgreSQL activa en tiempo real</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="hidden md:flex items-center gap-space-xs text-on-tertiary-fixed-variant bg-tertiary-fixed/60 px-space-sm py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-label-sm">Cupos protegidos con bloqueo transaccional</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span>Actualizado hace:</span>
+<span class="font-semibold text-primary" id="sync-counter">12s</span>
+<button class="p-1 rounded-full hover:bg-surface-container text-on-surface hover:text-primary transition-all" id="btn-refresh" title="Refrescar sesión">
+<span class="material-symbols-outlined text-[16px] align-middle">sync</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Editorial Section Header & Metrics Bento Strip -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-stretch">
+<!-- Title & Concept Block -->
+<div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary font-bold">Atelier Somatique · Programación</span>
+<span class="bg-surface-container-high px-space-xs py-0.5 rounded text-[10px] font-label-sm text-on-surface-variant uppercase font-semibold">Semana 41</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Próximas Sesiones y Aforo en Estudio</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+            Diseñadas bajo el método somático de bajo impacto. Reserva tu reformer con cupos asegurados y asistencia personalizada de hasta 8 practicantes por salón.
+          </p>
+</div>
+<!-- Venue Filter Pills Row -->
+<div class="mt-space-md pt-space-sm flex flex-wrap items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mr-space-xs">Sedes:</span>
+<button class="venue-pill active flex items-center gap-space-xs px-space-md py-1.5 rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-all" data-venue="all">
+<span>Todas las Sedes</span>
+<span class="bg-white/20 text-on-primary text-[10px] px-1.5 py-0.2 rounded-full font-semibold">24</span>
+</button>
+<button class="venue-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-venue="providencia">
+<span>Sede Providencia</span>
+<span class="material-symbols-outlined text-[15px] text-secondary cursor-pointer" style="font-variation-settings: 'FILL' 1;" title="Sede Predilecta">star</span>
+</button>
+<button class="venue-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-venue="las-condes">
+<span>Sede Las Condes</span>
+<span class="material-symbols-outlined text-[15px] text-outline hover:text-secondary cursor-pointer transition-colors" title="Marcar Favorita">star</span>
+</button>
+<button class="venue-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-venue="vitacura">
+<span>Sede Vitacura</span>
+<span class="material-symbols-outlined text-[15px] text-outline hover:text-secondary cursor-pointer transition-colors" title="Marcar Favorita">star</span>
+</button>
+</div>
+</div>
+<!-- Quick Metrics Bento Cards -->
+<div class="lg:col-span-5 grid grid-cols-2 sm:grid-cols-2 gap-space-sm">
+<!-- Metric 1: Ocupación Hoy -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ocupación Media</span>
+<div class="w-7 h-7 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[16px]">pie_chart</span>
+</div>
+</div>
+<div class="my-space-xs flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-primary font-bold">88.4%</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">↑ +4% vs ayer</span>
+</div>
+<!-- Tiny SVG Bar -->
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 88.4%"></div>
+</div>
+</div>
+<!-- Metric 2: Sesiones Disponibles -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Cupos Libres Hoy</span>
+<div class="w-7 h-7 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">event_seat</span>
+</div>
+</div>
+<div class="my-space-xs flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-primary font-bold">39</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-fixed-variant font-medium">de 192 plazas</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>6 clases con cupo crítico</span>
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+</div>
+</div>
+<!-- Quick Action 1: Mis Reservas -->
+<a class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex items-center gap-space-sm transition-all group" href="#">
+<div class="w-9 h-9 rounded-lg bg-primary-container text-on-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[20px]">bookmark_heart</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-primary font-semibold truncate">Mis Reservas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">2 agendadas activas</span>
+</div>
+</a>
+<!-- Quick Action 2: Validar Pagos -->
+<a class="bg-surface-container-low hover:bg-surface-container p-space-md rounded-xl flex items-center gap-space-sm transition-all group" href="#">
+<div class="w-9 h-9 rounded-lg bg-surface-container-high text-on-surface flex items-center justify-center group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-primary font-semibold truncate">Validar Pagos</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold truncate">4 por autorizar</span>
+</div>
+</a>
+</div>
+</div>
+<!-- Ultra-Dense Unified Filter & Command Bar -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl shadow-sm flex flex-col lg:flex-row items-center justify-between gap-space-sm">
+<div class="flex flex-wrap items-center gap-space-xs w-full lg:w-auto">
+<!-- Discipline Dropdown Pill -->
+<div class="relative inline-flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3 pointer-events-none">filter_alt</span>
+<select class="pl-9 pr-8 py-2 bg-surface-container-low hover:bg-surface-container rounded-lg font-label-md text-label-md text-on-surface appearance-none focus:outline-none transition-colors cursor-pointer" id="filter-discipline">
+<option value="all">Todas las disciplinas</option>
+<option value="reformer-esencial">Pilates Reformer Esencial</option>
+<option value="mat-flow">Pilates Mat &amp; Flow</option>
+<option value="reformer-dinamico">Pilates Reformer Dinámico &amp; Fuerza</option>
+<option value="tower-core">Tower &amp; Somatic Core</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2.5 pointer-events-none">keyboard_arrow_down</span>
+</div>
+<!-- Schedule / Time of Day Filter -->
+<div class="relative inline-flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3 pointer-events-none">schedule</span>
+<select class="pl-9 pr-8 py-2 bg-surface-container-low hover:bg-surface-container rounded-lg font-label-md text-label-md text-on-surface appearance-none focus:outline-none transition-colors cursor-pointer" id="filter-time">
+<option value="all">Cualquier horario</option>
+<option value="morning">Mañana (07:00 - 12:00)</option>
+<option value="afternoon">Tarde (12:01 - 18:00)</option>
+<option value="evening">Noche (18:01 - 21:30)</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2.5 pointer-events-none">keyboard_arrow_down</span>
+</div>
+<!-- Level Selector -->
+<div class="relative inline-flex items-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3 pointer-events-none">tune</span>
+<select class="pl-9 pr-8 py-2 bg-surface-container-low hover:bg-surface-container rounded-lg font-label-md text-label-md text-on-surface appearance-none focus:outline-none transition-colors cursor-pointer" id="filter-level">
+<option value="all">Todos los niveles</option>
+<option value="principiant">Principiante / Intermedio</option>
+<option value="avanzado">Avanzado</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute right-2.5 pointer-events-none">keyboard_arrow_down</span>
+</div>
+<!-- Toggle Switch: Solo con cupos disponibles -->
+<label class="inline-flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer select-none">
+<input checked="" class="sr-only peer" id="toggle-available-only" type="checkbox"/>
+<div class="w-8 h-4 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-secondary relative"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Solo con cupos</span>
+</label>
+</div>
+<!-- Quick Search Bar & Visual Grid View Switcher -->
+<div class="flex items-center gap-space-xs w-full lg:w-auto justify-end">
+<div class="relative flex-1 lg:w-56">
+<input class="w-full bg-surface-container-low pl-8 pr-3 py-1.5 rounded-lg font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container transition-all" id="filter-search" placeholder="Buscar coach o sesión..." type="text"/>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant absolute left-2.5 top-2">search</span>
+</div>
+<button class="p-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface transition-colors" id="btn-toggle-view" title="Alternar densidad">
+<span class="material-symbols-outlined text-[18px]">view_agenda</span>
+</button>
+</div>
+</div>
+<!-- Active Filter Tags Micro-bar -->
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm px-1">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="text-outline uppercase tracking-wider text-[11px]">Mostrando:</span>
+<span class="bg-surface-container px-2 py-0.5 rounded text-primary font-semibold">Viernes 9 &amp; Sábado 10 Octubre</span>
+<span class="bg-tertiary-fixed/40 text-on-tertiary-fixed px-2 py-0.5 rounded font-semibold">6 Clases en Providencia</span>
+<span class="text-on-surface-variant" id="active-count">(6 sesiones visibles)</span>
+</div>
+<button class="hover:text-secondary underline decoration-dotted text-body-sm" id="btn-reset-filters">Limpiar filtros</button>
+</div>
+<!-- Sessions Grid (3-Column Dense Boutique Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md" id="sessions-grid">
+<!-- Session Card 1 -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md" data-discipline="reformer-esencial" data-level="principiant" data-time="morning" data-venue="providencia">
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<!-- Mint Badge -->
+<div class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>6 de 8 cupos</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Viernes, 9 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Reformer Esencial</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Entrenamiento de bajo impacto focalizado en alineación postural, fuerza de core profundo y estabilidad pélvica.
+          </p>
+<!-- Metadata Icons List -->
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>12:00 p. m. - 12:55 p. m.</span>
+<span class="text-outline-variant font-normal">(55 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <strong class="font-semibold text-primary">Valeria Castro</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-on-surface">Principiante / Intermedio</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline -->
+<div class="pt-space-sm bg-surface-container-low/60 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$15.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-sm">
+<span>Reservar Cupo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Session Card 2 -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md" data-discipline="mat-flow" data-level="all" data-time="afternoon" data-venue="providencia">
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<!-- Mint / Full Badge -->
+<div class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>12 de 12 cupos</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Viernes, 9 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Mat &amp; Flow</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Sesión clásica en suelo utilizando accesorios (aros, bandas y pelotas) para tonificación completa y elongación profunda.
+          </p>
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>01:30 p. m. - 02:30 p. m.</span>
+<span class="text-outline-variant font-normal">(60 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <strong class="font-semibold text-primary">Camila Soto</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-on-surface">Todos los niveles</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline -->
+<div class="pt-space-sm bg-surface-container-low/60 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$15.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-sm">
+<span>Reservar Cupo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Session Card 3 -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md" data-discipline="reformer-dinamico" data-level="avanzado" data-time="evening" data-venue="providencia">
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<!-- Full Mint Badge -->
+<div class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>8 de 8 cupos</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Viernes, 9 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Reformer Dinámico &amp; Fuerza</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Secuencias dinámicas con resistencia media-alta para esculpir masa muscular, equilibrio y potencia anaeróbica.
+          </p>
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>09:00 p. m. - 09:55 p. m.</span>
+<span class="text-outline-variant font-normal">(55 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <strong class="font-semibold text-primary">Valeria Castro</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-secondary font-semibold">Avanzado</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline -->
+<div class="pt-space-sm bg-surface-container-low/60 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$15.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-sm">
+<span>Reservar Cupo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Session Card 4 -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md" data-discipline="reformer-esencial" data-level="principiant" data-time="morning" data-venue="providencia">
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<div class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>8 de 8 cupos</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Sábado, 10 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Reformer Esencial</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Entrenamiento de bajo impacto focalizado en alineación postural, fuerza de core profundo y fluidez respiratoria.
+          </p>
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>11:30 a. m. - 12:25 p. m.</span>
+<span class="text-outline-variant font-normal">(55 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <strong class="font-semibold text-primary">Valentina Ramos</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-on-surface">Principiante / Intermedio</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline -->
+<div class="pt-space-sm bg-surface-container-low/60 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$15.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-sm">
+<span>Reservar Cupo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Session Card 5 -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md" data-discipline="reformer-esencial" data-level="principiant" data-time="afternoon" data-venue="providencia">
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<!-- Semi-full Mint -->
+<div class="inline-flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>3 de 4 cupos</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Sábado, 10 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Reformer Semi-Privado</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Clase reducida a 4 alumnos para perfeccionamiento técnico de muelles, caja larga y cadencia personalizada.
+          </p>
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>04:01 p. m. - 05:01 p. m.</span>
+<span class="text-outline-variant font-normal">(55 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <span class="italic text-on-surface-variant">Por asignar</span></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-on-surface">Todos los niveles</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline -->
+<div class="pt-space-sm bg-surface-container-low/60 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$18.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-sm">
+<span>Reservar Cupo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Session Card 6 (Urgent Capacity - Fuchsia Surge) -->
+<article class="session-card bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-space-md relative overflow-hidden" data-discipline="reformer-esencial" data-level="principiant" data-time="afternoon" data-venue="providencia">
+<!-- Accent Glow Line -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary to-secondary-container"></div>
+<!-- Zone 1: Header Chips -->
+<div class="flex items-center justify-between gap-space-xs">
+<div class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sede Providencia</span>
+</div>
+<!-- Urgent Fuchsia Badge -->
+<div class="inline-flex items-center gap-1 bg-secondary-fixed text-on-secondary-fixed-variant px-2.5 py-1 rounded-full font-label-sm text-label-sm font-bold animate-pulse">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span>¡Últimos 2 cupos!</span>
+</div>
+</div>
+<!-- Zone 2: Details Core -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-semibold">Sábado, 10 de Octubre</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Pilates Reformer Esencial</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+            Entrenamiento de bajo impacto focalizado en alineación postural, fuerza de core y movilidad espinal.
+          </p>
+<div class="mt-space-xs flex flex-col gap-1.5 font-body-sm text-body-sm text-on-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+<span>04:09 p. m. - 05:09 p. m.</span>
+<span class="text-outline-variant font-normal">(55 min)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">sports_gymnastics</span>
+<span>Instructor: <strong class="font-semibold text-primary">Marta Henríquez</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline">bar_chart</span>
+<span class="text-on-surface-variant">Nivel: <span class="font-medium text-on-surface">Principiante / Intermedio</span></span>
+</div>
+</div>
+</div>
+<!-- Zone 3: Price & Action Baseline (Urgent Highlight CTA) -->
+<div class="pt-space-sm bg-secondary-fixed/30 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-secondary font-semibold uppercase leading-none">Inversión</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">$15.000 <span class="text-label-sm font-normal text-on-surface-variant">CLP</span></span>
+</div>
+<button class="booking-cta flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary font-label-md text-label-md transition-all active:translate-y-0.5 shadow-md">
+<span>Asegurar Lugar</span>
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Collapsible Day Summary & Capacity Distribution Footprint -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm mt-space-sm flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">architecture</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-primary">Estándar de Calidad Somática Atelier</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Todos los equipos de reformer y mats cuentan con sanitización activa grado hospitalario entre bloques.</p>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary-fixed"></span>
+<span>Cupos Amplios</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span>Crítico (&lt;3 cupos)</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-2.5 h-2.5 rounded-full bg-surface-dim"></span>
+<span>Agotado</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple reactive micro-interactions
+  document.addEventListener('DOMContentLoaded', () => {
+    // Refresh counter timer simulation
+    let seconds = 12;
+    const counterEl = document.getElementById('sync-counter');
+    const refreshBtn = document.getElementById('btn-refresh');
+
+    setInterval(() => {
+      seconds++;
+      if (counterEl) counterEl.textContent = `${seconds}s`;
+    }, 1000);
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        seconds = 0;
+        if (counterEl) counterEl.textContent = '0s';
+        refreshBtn.classList.add('rotate-180');
+        setTimeout(() => refreshBtn.classList.remove('rotate-180'), 500);
+      });
+    }
+
+    // Venue filter pills interactive toggle
+    const venuePills = document.querySelectorAll('.venue-pill');
+    const cards = document.querySelectorAll('.session-card');
+    const activeCount = document.getElementById('active-count');
+
+    venuePills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        venuePills.forEach(p => {
+          p.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+          p.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
+        pill.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+      });
+    });
+
+    // Client-side quick filter simulation
+    const disciplineSelect = document.getElementById('filter-discipline');
+    const searchInput = document.getElementById('filter-search');
+    const resetBtn = document.getElementById('btn-reset-filters');
+
+    function filterSessions() {
+      const selectedDiscipline = disciplineSelect ? disciplineSelect.value : 'all';
+      const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      let visible = 0;
+
+      cards.forEach(card => {
+        const disc = card.getAttribute('data-discipline');
+        const text = card.textContent.toLowerCase();
+
+        const matchesDiscipline = (selectedDiscipline === 'all' || disc === selectedDiscipline);
+        const matchesSearch = (term === '' || text.includes(term));
+
+        if (matchesDiscipline && matchesSearch) {
+          card.classList.remove('hidden');
+          visible++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      if (activeCount) {
+        activeCount.textContent = `(${visible} sesiones visibles)`;
+      }
+    }
+
+    if (disciplineSelect) disciplineSelect.addEventListener('change', filterSessions);
+    if (searchInput) searchInput.addEventListener('input', filterSessions);
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (disciplineSelect) disciplineSelect.value = 'all';
+        if (searchInput) searchInput.value = '';
+        filterSessions();
+      });
+    }
+
+    // Interactive booking confirmation toast
+    const bookingButtons = document.querySelectorAll('.booking-cta');
+    bookingButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const prevText = btn.innerHTML;
+        btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Apartando...</span>`;
+        btn.disabled = true;
+
+        setTimeout(() => {
+          btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">check_circle</span><span>¡Listo!</span>`;
+          btn.classList.remove('bg-primary', 'bg-secondary');
+          btn.classList.add('bg-tertiary-container', 'text-on-tertiary');
+          
+          setTimeout(() => {
+            btn.innerHTML = prevText;
+            btn.disabled = false;
+            btn.classList.remove('bg-tertiary-container', 'text-on-tertiary');
+            btn.classList.add('bg-primary');
+          }, 2400);
+        }, 800);
+      });
+    });
+  });
+</script></main></div></body></html>

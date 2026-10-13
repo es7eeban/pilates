@@ -397,6 +397,142 @@ Equipo Pilates Studio
     });
   }
 
+  /**
+   * Notificación cuando el alumno se une a la lista de espera (sobrecupo)
+   */
+  async notifyWaitlistJoined(waitlistEntry: any, user: any, schedule: any) {
+    const classTitle = schedule.classType?.title || 'Pilates Reformer';
+    const branchName = schedule.branch?.name || 'Sede';
+    const dateFormatted = this.formatDate(schedule.startTime);
+    const startTimeFormatted = this.formatTime(schedule.startTime);
+    const position = waitlistEntry.position || 1;
+
+    const title = `En lista de espera para ${classTitle} (#${position})`;
+    const message = `Te has unido exitosamente a la lista de espera (posición #${position} de 3) para ${classTitle} en ${branchName} el ${dateFormatted} a las ${startTimeFormatted} hrs. Si un alumno cancela, te avisaremos de inmediato.`;
+
+    const emailSubject = `Lista de Espera: Posición #${position} en ${classTitle}`;
+    const emailBody = `
+Hola ${user.name},
+
+Estás en la lista de espera (posición #${position} de 3) para la clase:
+- Disciplina: ${classTitle}
+- Sede: ${branchName}
+- Horario: ${dateFormatted} a las ${startTimeFormatted} hrs
+
+Si se libera un cupo por cancelación, te enviaremos una alerta prioritaria y tendrás 1 hora para confirmar tu reserva.
+
+Saludos,
+Equipo Pilates Studio
+    `.trim();
+
+    const whatsappMessage = `⏳ *Pilates Studio* | Hola ${user.name}, estás en la lista de espera (posición #${position}) para ${classTitle} el ${dateFormatted} a las ${startTimeFormatted} hrs. Te avisaremos apenas se libere un lugar!`;
+
+    this.logger.log(`[EMAIL SIMULATED] >>> To: ${user.email} | Subject: ${emailSubject}`);
+    this.logger.log(`[WHATSAPP SIMULATED] >>> To: ${user.phone || 'N/A'} | Text: ${whatsappMessage}`);
+
+    return this.prisma.notification.create({
+      data: {
+        userId: user.id,
+        title,
+        message,
+        type: NotificationType.WAITLIST_JOINED,
+        channel: NotificationChannel.IN_APP,
+        metadata: {
+          waitlistEntryId: waitlistEntry.id,
+          scheduleId: schedule.id,
+          position,
+          classTitle,
+          branchName,
+          email: { to: user.email, subject: emailSubject, body: emailBody },
+          whatsapp: { to: user.phone, message: whatsappMessage },
+        },
+      },
+    });
+  }
+
+  /**
+   * Notificación cuando se le ofrece el cupo liberado al siguiente en espera (1 hora para aceptar)
+   */
+  async notifyWaitlistOffered(waitlistEntry: any, user: any, schedule: any) {
+    const classTitle = schedule.classType?.title || 'Pilates Reformer';
+    const branchName = schedule.branch?.name || 'Sede';
+    const dateFormatted = this.formatDate(schedule.startTime);
+    const startTimeFormatted = this.formatTime(schedule.startTime);
+    const expiresFormatted = waitlistEntry.expiresAt
+      ? this.formatTime(waitlistEntry.expiresAt)
+      : '1 hora';
+
+    const title = `¡Cupo disponible en ${classTitle}! Tienes 1 hora para confirmar ⚡`;
+    const message = `¡Buenas noticias! Se ha liberado un lugar para ${classTitle} en ${branchName} el ${dateFormatted} a las ${startTimeFormatted} hrs. Tienes hasta las ${expiresFormatted} hrs (1 hora) para confirmar tu reserva antes de que pase al siguiente alumno.`;
+
+    const emailSubject = `¡CUPO DISPONIBLE! Tienes 1 hora para confirmar tu clase de Pilates`;
+    const emailBody = `
+¡Hola ${user.name}!
+
+¡Se ha liberado un cupo para tu clase!
+- Disciplina: ${classTitle}
+- Sede: ${branchName}
+- Fecha: ${dateFormatted} a las ${startTimeFormatted} hrs
+
+⚡ IMPORTANTE: Tienes exactamente 1 HORA (hasta las ${expiresFormatted} hrs) para ingresar a la plataforma y confirmar tu reserva.
+Si no confirmas dentro del plazo, el cupo se ofrecerá automáticamente al siguiente alumno en la lista de espera.
+
+¡Asegura tu lugar ahora en la plataforma!
+Equipo Pilates Studio
+    `.trim();
+
+    const whatsappMessage = `🚨 *¡CUPO LIBERADO!* Hola ${user.name}, se liberó un lugar para tu clase de *${classTitle}* en *${branchName}* (${dateFormatted} a las ${startTimeFormatted} hrs). Tienes 1 HORA (hasta las ${expiresFormatted} hrs) para confirmar en la app antes de que pase al siguiente alumno! 🧘‍♀️`;
+
+    this.logger.log(`[EMAIL SIMULATED] >>> To: ${user.email} | Subject: ${emailSubject}`);
+    this.logger.log(`[WHATSAPP SIMULATED] >>> To: ${user.phone || 'N/A'} | Text: ${whatsappMessage}`);
+
+    return this.prisma.notification.create({
+      data: {
+        userId: user.id,
+        title,
+        message,
+        type: NotificationType.WAITLIST_OFFER,
+        channel: NotificationChannel.IN_APP,
+        metadata: {
+          waitlistEntryId: waitlistEntry.id,
+          scheduleId: schedule.id,
+          expiresAt: waitlistEntry.expiresAt,
+          classTitle,
+          branchName,
+          email: { to: user.email, subject: emailSubject, body: emailBody },
+          whatsapp: { to: user.phone, message: whatsappMessage },
+        },
+      },
+    });
+  }
+
+  /**
+   * Notificación cuando expira la oferta de 1 hora
+   */
+  async notifyWaitlistExpired(waitlistEntry: any, user: any, schedule: any) {
+    const classTitle = schedule.classType?.title || 'Pilates Reformer';
+    const branchName = schedule.branch?.name || 'Sede';
+
+    const title = `Plazo de reserva expirado para ${classTitle}`;
+    const message = `El plazo de 1 hora para confirmar tu cupo en ${classTitle} (${branchName}) ha finalizado. El cupo ha sido ofrecido al siguiente alumno en espera.`;
+
+    return this.prisma.notification.create({
+      data: {
+        userId: user.id,
+        title,
+        message,
+        type: NotificationType.WAITLIST_EXPIRED,
+        channel: NotificationChannel.IN_APP,
+        metadata: {
+          waitlistEntryId: waitlistEntry.id,
+          scheduleId: schedule.id,
+          classTitle,
+          branchName,
+        },
+      },
+    });
+  }
+
   // --- Consultas y Gestión ---
 
   async getMyNotifications(userId: string) {

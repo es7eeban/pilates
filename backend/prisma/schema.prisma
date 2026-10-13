@@ -66,6 +66,7 @@ model User {
   taughtSchedules ClassSchedule[] @relation("InstructorSchedules")
   auditedPayments Payment[]       @relation("AdminVerifiedPayments")
   notifications   Notification[]
+  waitlistEntries WaitlistEntry[]
 
   @@map("users")
 }
@@ -121,6 +122,7 @@ model ClassSchedule {
   instructor User?     @relation("InstructorSchedules", fields: [instructorId], references: [id])
   branch     Branch?   @relation(fields: [branchId], references: [id])
   bookings   Booking[]
+  waitlistEntries WaitlistEntry[]
 
   @@index([startTime, status])
   @@index([branchId])
@@ -177,6 +179,9 @@ enum NotificationType {
   PAYMENT_APPROVED
   PAYMENT_REJECTED
   BOOKING_CANCELLED
+  WAITLIST_JOINED
+  WAITLIST_OFFER
+  WAITLIST_EXPIRED
 }
 
 enum NotificationChannel {
@@ -202,4 +207,32 @@ model Notification {
   @@index([createdAt])
   @@map("notifications")
 }
+
+enum WaitlistStatus {
+  WAITING
+  OFFERED
+  ACCEPTED
+  EXPIRED
+  DECLINED
+}
+
+model WaitlistEntry {
+  id         String         @id @default(uuid())
+  userId     String         @map("user_id")
+  scheduleId String         @map("schedule_id")
+  position   Int            @default(1)
+  status     WaitlistStatus @default(WAITING)
+  offeredAt  DateTime?      @map("offered_at")
+  expiresAt  DateTime?      @map("expires_at")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule ClassSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId, status])
+  @@index([userId, status])
+  @@map("waitlist_entries")
+}
+
 

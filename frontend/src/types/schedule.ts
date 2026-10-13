@@ -58,13 +58,15 @@ export interface QuerySchedulesParams {
 
 export type AttendanceStatus = 'PENDING' | 'ATTENDED' | 'NO_SHOW' | 'EXCUSED';
 
+export type PaymentMethod = 'GATEWAY' | 'TRANSFER';
+
 export interface Booking {
   id: string;
   userId?: string;
   scheduleId: string;
   bookingCode: string;
   status: 'PENDIENTE_PAGO' | 'PENDIENTE_VALIDACION' | 'CONFIRMADA' | 'CANCELADA_CLIENTE' | 'RECHAZADA_ADMIN' | 'FINALIZADA';
-  paymentMethod: 'GATEWAY' | 'TRANSFER';
+  paymentMethod: PaymentMethod;
   voucherUrl?: string;
   rejectionReason?: string;
   attendanceStatus?: AttendanceStatus;

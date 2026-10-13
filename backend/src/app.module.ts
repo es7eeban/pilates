@@ -11,6 +11,7 @@ import { BranchesModule } from './branches/branches.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
 import { AttendanceModule } from './attendance/attendance.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { WaitlistModule } from './waitlist/waitlist.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     BookingsModule,
     AttendanceModule,
     NotificationsModule,
+    WaitlistModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,13 +5,14 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { BookingStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
+import { BookingStatus, PaymentMethod, PaymentStatus, Role, WaitlistStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SchedulesService } from '../schedules/schedules.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 import { UploadVoucherDto } from './dto/upload-voucher.dto.js';
 import { RejectVoucherDto } from './dto/reject-voucher.dto.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { WaitlistService } from '../waitlist/waitlist.service.js';
 
 @Injectable()
 export class BookingsService {
@@ -19,6 +20,7 @@ export class BookingsService {
     private readonly prisma: PrismaService,
     private readonly schedulesService: SchedulesService,
     private readonly notificationsService: NotificationsService,
+    private readonly waitlistService: WaitlistService,
   ) {}
 
   async create(userId: string, dto: CreateBookingDto) {
@@ -218,8 +220,19 @@ export class BookingsService {
     }
 
     const cancelledBooking = await this.prisma.$transaction(async (tx) => {
-      // 1. Liberar cupo en la sesión
-      await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
+      // 1. Si hay alumnos en lista de espera, promover de inmediato; si no, liberar cupo general
+      const hasWaiting = await tx.waitlistEntry.findFirst({
+        where: {
+          scheduleId: booking.scheduleId,
+          status: WaitlistStatus.WAITING,
+        },
+      });
+
+      if (hasWaiting) {
+        await this.waitlistService.promoteNextInWaitlist(booking.scheduleId, tx);
+      } else {
+        await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
+      }
 
       // 2. Actualizar estado
       return tx.booking.update({
@@ -424,8 +437,19 @@ export class BookingsService {
     }
 
     const rejectedBooking = await this.prisma.$transaction(async (tx) => {
-      // 1. Liberar cupo al rechazar
-      await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
+      // 1. Si hay alumnos en lista de espera, promover de inmediato; si no, liberar cupo general
+      const hasWaiting = await tx.waitlistEntry.findFirst({
+        where: {
+          scheduleId: booking.scheduleId,
+          status: WaitlistStatus.WAITING,
+        },
+      });
+
+      if (hasWaiting) {
+        await this.waitlistService.promoteNextInWaitlist(booking.scheduleId, tx);
+      } else {
+        await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
+      }
 
       // 2. Rechazar reserva
       const updatedBooking = await tx.booking.update({
