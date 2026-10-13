@@ -558,3 +558,56 @@ export const attendanceApi = {
     return handleResponse<import('../types/schedule').ClassSchedule>(res);
   },
 };
+
+export const notificationsApi = {
+  async getMy(): Promise<import('../types/notification').MyNotificationsResponse> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/notifications/my`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/notification').MyNotificationsResponse>(res);
+  },
+
+  async markAsRead(id: string): Promise<import('../types/notification').AppNotification> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/notification').AppNotification>(res);
+  },
+
+  async markAllAsRead(): Promise<{ success: boolean }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<{ success: boolean }>(res);
+  },
+
+  async getAdminLogs(limit = 100): Promise<import('../types/notification').AppNotification[]> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/notifications/admin/logs?limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return handleResponse<import('../types/notification').AppNotification[]>(res);
+  },
+};
+

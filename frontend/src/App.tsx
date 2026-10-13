@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck, Building2, Users, CalendarPlus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck, Building2, Users, CalendarPlus, Bell } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
@@ -11,6 +11,8 @@ import { AttendanceModal } from './components/AttendanceModal';
 import { AdminBranchesModal } from './components/AdminBranchesModal';
 import { AdminUsersModal } from './components/AdminUsersModal';
 import { AdminClassesModal } from './components/AdminClassesModal';
+import { NotificationsModal } from './components/NotificationsModal';
+import { notificationsApi } from './services/api';
 import type { ClassSchedule } from './types/schedule';
 
 function MainContent() {
@@ -25,7 +27,29 @@ function MainContent() {
   const [adminBranchesOpen, setAdminBranchesOpen] = useState(false);
   const [adminUsersOpen, setAdminUsersOpen] = useState(false);
   const [adminClassesOpen, setAdminClassesOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [catalogKey, setCatalogKey] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await notificationsApi.getMy();
+      setUnreadCount(res.unreadCount);
+    } catch {
+      // Ignorar errores en sondeo silencioso
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 25000);
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, fetchUnreadCount]);
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
     setAuthMode(mode);
@@ -42,6 +66,7 @@ function MainContent() {
 
   const handleRefreshSchedule = () => {
     setCatalogKey((prev) => prev + 1);
+    fetchUnreadCount();
   };
 
   return (
@@ -54,6 +79,8 @@ function MainContent() {
         onOpenAdminBranches={() => setAdminBranchesOpen(true)}
         onOpenAdminUsers={() => setAdminUsersOpen(true)}
         onOpenAdminClasses={() => setAdminClassesOpen(true)}
+        onOpenNotifications={() => setNotificationsOpen(true)}
+        unreadNotificationsCount={unreadCount}
       />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-12 w-full">
@@ -85,6 +112,17 @@ function MainContent() {
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   <span>Ver Mis Reservas</span>
+                </button>
+
+                <button
+                  onClick={() => setNotificationsOpen(true)}
+                  className="px-3.5 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-300 rounded-xl transition flex items-center gap-1.5 shadow-sm relative"
+                >
+                  <Bell className="w-3.5 h-3.5 text-sage-600" />
+                  <span>Avisos</span>
+                  {unreadCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                  )}
                 </button>
 
                 {(user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || user.isInstructor) && (
@@ -285,6 +323,15 @@ function MainContent() {
           handleRefreshSchedule();
         }}
         onUpdated={handleRefreshSchedule}
+      />
+
+      <NotificationsModal
+        isOpen={notificationsOpen}
+        onClose={() => {
+          setNotificationsOpen(false);
+          fetchUnreadCount();
+        }}
+        onNotificationsChanged={fetchUnreadCount}
       />
     </div>
   );

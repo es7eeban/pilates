@@ -11,16 +11,18 @@ import { SchedulesService } from '../schedules/schedules.service.js';
 import { CreateBookingDto } from './dto/create-booking.dto.js';
 import { UploadVoucherDto } from './dto/upload-voucher.dto.js';
 import { RejectVoucherDto } from './dto/reject-voucher.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly schedulesService: SchedulesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string, dto: CreateBookingDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const createdBooking = await this.prisma.$transaction(async (tx) => {
       // 1. Validar si el alumno ya tiene una reserva activa para esta misma sesión
       const existing = await tx.booking.findFirst({
         where: {
@@ -82,6 +84,14 @@ export class BookingsService {
               },
             },
           },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
         },
       });
 
@@ -101,6 +111,34 @@ export class BookingsService {
         payment,
       };
     });
+
+    // 6. Notificaciones transaccionales automáticas (In-app + Email/WhatsApp simulados)
+    try {
+      await this.notificationsService.notifyBookingCreated({
+        id: createdBooking.id,
+        bookingCode: createdBooking.bookingCode,
+        paymentMethod: createdBooking.paymentMethod,
+        status: createdBooking.status,
+        voucherUrl: createdBooking.voucherUrl,
+        user: createdBooking.user,
+        schedule: createdBooking.schedule,
+      });
+
+      if (createdBooking.voucherUrl) {
+        await this.notificationsService.notifyVoucherUploaded({
+          id: createdBooking.id,
+          bookingCode: createdBooking.bookingCode,
+          voucherUrl: createdBooking.voucherUrl,
+          user: createdBooking.user,
+          schedule: createdBooking.schedule,
+        });
+      }
+    } catch (err) {
+      // No frenar la reserva si falla la emisión de la notificación
+      console.error('Error al emitir notificación de reserva:', err);
+    }
+
+    return createdBooking;
   }
 
   async findMyBookings(userId: string) {
@@ -179,7 +217,7 @@ export class BookingsService {
       throw new ConflictException(`La reserva ya se encuentra en estado '${booking.status}'`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const cancelledBooking = await this.prisma.$transaction(async (tx) => {
       // 1. Liberar cupo en la sesión
       await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
 
@@ -200,6 +238,19 @@ export class BookingsService {
         },
       });
     });
+
+    try {
+      await this.notificationsService.notifyBookingCancelled({
+        id: cancelledBooking.id,
+        bookingCode: cancelledBooking.bookingCode,
+        user: booking.user,
+        schedule: booking.schedule,
+      });
+    } catch (err) {
+      console.error('Error al emitir notificación de cancelación:', err);
+    }
+
+    return cancelledBooking;
   }
 
   async uploadVoucher(id: string, userId: string, dto: UploadVoucherDto) {
@@ -213,7 +264,7 @@ export class BookingsService {
       throw new ConflictException('Esta reserva ya fue confirmada previamente');
     }
 
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id },
       data: {
         voucherUrl: dto.voucherUrl,
@@ -226,9 +277,31 @@ export class BookingsService {
             branch: true,
           },
         },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
         payment: true,
       },
     });
+
+    try {
+      await this.notificationsService.notifyVoucherUploaded({
+        id: updated.id,
+        bookingCode: updated.bookingCode,
+        voucherUrl: updated.voucherUrl,
+        user: updated.user,
+        schedule: updated.schedule,
+      });
+    } catch (err) {
+      console.error('Error al emitir notificación de subida de comprobante:', err);
+    }
+
+    return updated;
   }
 
   // --- Endpoints Administrativos ---
@@ -280,7 +353,7 @@ export class BookingsService {
       throw new ConflictException('La reserva ya ha sido aprobada previamente');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const approvedBooking = await this.prisma.$transaction(async (tx) => {
       const updatedBooking = await tx.booking.update({
         where: { id },
         data: {
@@ -291,6 +364,14 @@ export class BookingsService {
             include: {
               classType: true,
               branch: true,
+              instructor: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                },
+              },
             },
           },
           user: {
@@ -317,6 +398,19 @@ export class BookingsService {
 
       return updatedBooking;
     });
+
+    try {
+      await this.notificationsService.notifyPaymentApproved({
+        id: approvedBooking.id,
+        bookingCode: approvedBooking.bookingCode,
+        user: approvedBooking.user,
+        schedule: approvedBooking.schedule,
+      });
+    } catch (err) {
+      console.error('Error al emitir notificación de pago aprobado:', err);
+    }
+
+    return approvedBooking;
   }
 
   async rejectVoucher(id: string, adminId: string, dto: RejectVoucherDto) {
@@ -329,7 +423,7 @@ export class BookingsService {
       throw new NotFoundException(`Reserva con ID '${id}' no encontrada`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const rejectedBooking = await this.prisma.$transaction(async (tx) => {
       // 1. Liberar cupo al rechazar
       await this.schedulesService.releaseSlotWithPessimisticLock(booking.scheduleId, tx);
 
@@ -347,6 +441,14 @@ export class BookingsService {
               branch: true,
             },
           },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
         },
       });
 
@@ -362,6 +464,19 @@ export class BookingsService {
 
       return updatedBooking;
     });
+
+    try {
+      await this.notificationsService.notifyPaymentRejected({
+        id: rejectedBooking.id,
+        bookingCode: rejectedBooking.bookingCode,
+        user: rejectedBooking.user,
+        schedule: rejectedBooking.schedule,
+      }, dto.reason);
+    } catch (err) {
+      console.error('Error al emitir notificación de pago rechazado:', err);
+    }
+
+    return rejectedBooking;
   }
 
   handleDirectVoucherUpload(file?: Express.Multer.File) {
@@ -395,7 +510,7 @@ export class BookingsService {
 
     const voucherUrl = `/uploads/vouchers/${file.filename}`;
 
-    return this.prisma.booking.update({
+    const updated = await this.prisma.booking.update({
       where: { id },
       data: {
         voucherUrl,
@@ -408,8 +523,30 @@ export class BookingsService {
             branch: true,
           },
         },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
         payment: true,
       },
     });
+
+    try {
+      await this.notificationsService.notifyVoucherUploaded({
+        id: updated.id,
+        bookingCode: updated.bookingCode,
+        voucherUrl: updated.voucherUrl,
+        user: updated.user,
+        schedule: updated.schedule,
+      });
+    } catch (err) {
+      console.error('Error al emitir notificación de subida de archivo de comprobante:', err);
+    }
+
+    return updated;
   }
 }

@@ -10,6 +10,7 @@ import {
   Building2,
   Users,
   CalendarPlus,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
@@ -22,6 +23,8 @@ interface NavbarProps {
   onOpenAdminBranches: () => void;
   onOpenAdminUsers: () => void;
   onOpenAdminClasses: () => void;
+  onOpenNotifications: () => void;
+  unreadNotificationsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,6 +35,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAdminBranches,
   onOpenAdminUsers,
   onOpenAdminClasses,
+  onOpenNotifications,
+  unreadNotificationsCount = 0,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -140,6 +145,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={onOpenNotifications}
+                className="relative p-2 text-charcoal hover:text-sage-800 bg-sand-50/80 hover:bg-sand-100 rounded-xl border border-sand-200 transition shadow-sm"
+                title="Notificaciones"
+              >
+                <Bell className="w-4 h-4 text-sage-700" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm animate-pulse">
+                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
               <div className="flex items-center gap-2 bg-sand-50/80 px-2.5 py-1.5 rounded-xl border border-sand-200">
                 <div className="w-7 h-7 rounded-full bg-sage-200 text-sage-800 flex items-center justify-center font-semibold text-xs">
                   {user.name.charAt(0).toUpperCase()}

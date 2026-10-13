@@ -10,6 +10,7 @@ import { SchedulesModule } from './schedules/schedules.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { BookingsModule } from './bookings/bookings.module.js';
 import { AttendanceModule } from './attendance/attendance.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AttendanceModule } from './attendance/attendance.module.js';
     BranchesModule,
     BookingsModule,
     AttendanceModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

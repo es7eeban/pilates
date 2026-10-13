@@ -65,6 +65,7 @@ model User {
   bookings        Booking[]
   taughtSchedules ClassSchedule[] @relation("InstructorSchedules")
   auditedPayments Payment[]       @relation("AdminVerifiedPayments")
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -169,3 +170,36 @@ model Payment {
 
   @@map("payments")
 }
+
+enum NotificationType {
+  BOOKING_CREATED
+  VOUCHER_UPLOADED
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  BOOKING_CANCELLED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL_SIMULATED
+  WHATSAPP_SIMULATED
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String              @map("user_id")
+  title     String              @db.VarChar(200)
+  message   String              @db.Text
+  type      NotificationType
+  channel   NotificationChannel @default(IN_APP)
+  read      Boolean             @default(false)
+  metadata  Json?
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
