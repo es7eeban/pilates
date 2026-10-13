@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck, Building2, Users } from 'lucide-react';
+import { CheckCircle2, Clock, Sparkles, ShieldCheck, MapPin, Star, BookOpen, FileCheck, Building2, Users, CalendarPlus } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { AuthModal } from './components/AuthModal';
@@ -10,6 +10,7 @@ import { AdminVouchersModal } from './components/AdminVouchersModal';
 import { AttendanceModal } from './components/AttendanceModal';
 import { AdminBranchesModal } from './components/AdminBranchesModal';
 import { AdminUsersModal } from './components/AdminUsersModal';
+import { AdminClassesModal } from './components/AdminClassesModal';
 import type { ClassSchedule } from './types/schedule';
 
 function MainContent() {
@@ -23,6 +24,7 @@ function MainContent() {
   const [attendanceOpen, setAttendanceOpen] = useState(false);
   const [adminBranchesOpen, setAdminBranchesOpen] = useState(false);
   const [adminUsersOpen, setAdminUsersOpen] = useState(false);
+  const [adminClassesOpen, setAdminClassesOpen] = useState(false);
   const [catalogKey, setCatalogKey] = useState(0);
 
   const handleOpenAuth = (mode: 'login' | 'register') => {
@@ -51,6 +53,7 @@ function MainContent() {
         onOpenAttendance={() => setAttendanceOpen(true)}
         onOpenAdminBranches={() => setAdminBranchesOpen(true)}
         onOpenAdminUsers={() => setAdminUsersOpen(true)}
+        onOpenAdminClasses={() => setAdminClassesOpen(true)}
       />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-12 w-full">
@@ -110,6 +113,14 @@ function MainContent() {
                     >
                       <Users className="w-3.5 h-3.5 text-sage-600" />
                       <span>Usuarios</span>
+                    </button>
+
+                    <button
+                      onClick={() => setAdminClassesOpen(true)}
+                      className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-300 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5 text-sage-600" />
+                      <span>Clases</span>
                     </button>
 
                     <button
@@ -265,6 +276,15 @@ function MainContent() {
         isOpen={adminUsersOpen}
         onClose={() => setAdminUsersOpen(false)}
         onUsersUpdated={handleRefreshSchedule}
+      />
+
+      <AdminClassesModal
+        isOpen={adminClassesOpen}
+        onClose={() => {
+          setAdminClassesOpen(false);
+          handleRefreshSchedule();
+        }}
+        onUpdated={handleRefreshSchedule}
       />
     </div>
   );

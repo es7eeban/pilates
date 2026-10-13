@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Building2,
   Users,
+  CalendarPlus,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
@@ -20,6 +21,7 @@ interface NavbarProps {
   onOpenAttendance: () => void;
   onOpenAdminBranches: () => void;
   onOpenAdminUsers: () => void;
+  onOpenAdminClasses: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAttendance,
   onOpenAdminBranches,
   onOpenAdminUsers,
+  onOpenAdminClasses,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -111,6 +114,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Users className="w-3.5 h-3.5 text-sage-600" />
                     <span className="hidden md:inline">Usuarios</span>
+                  </button>
+
+                  <button
+                    onClick={onOpenAdminClasses}
+                    className="px-2.5 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-200 rounded-xl transition shadow-sm flex items-center gap-1.5"
+                    title="Administrar disciplinas y horarios"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5 text-sage-600" />
+                    <span className="hidden md:inline">Clases</span>
                   </button>
 
                   <button

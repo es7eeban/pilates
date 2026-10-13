@@ -225,8 +225,51 @@ export const usersApi = {
 };
 
 export const classTypesApi = {
-  async getAll(): Promise<import('../types/schedule').ClassType[]> {
-    const res = await fetch(`${API_BASE_URL}/class-types`);
+  async getAll(includeInactive = false): Promise<import('../types/schedule').ClassType[]> {
+    const res = await fetch(`${API_BASE_URL}/class-types${includeInactive ? '?includeInactive=true' : ''}`);
+    return handleResponse(res);
+  },
+
+  async create(payload: import('../types/admin').CreateClassTypePayload): Promise<import('../types/schedule').ClassType> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/class-types`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async update(id: string, payload: import('../types/admin').UpdateClassTypePayload): Promise<import('../types/schedule').ClassType> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/class-types/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async remove(id: string): Promise<import('../types/schedule').ClassType> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/class-types/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return handleResponse(res);
   },
 };
@@ -249,6 +292,49 @@ export const schedulesApi = {
 
   async getById(id: string): Promise<import('../types/schedule').ClassSchedule> {
     const res = await fetch(`${API_BASE_URL}/schedules/${id}`);
+    return handleResponse(res);
+  },
+
+  async create(payload: import('../types/admin').CreateSchedulePayload): Promise<import('../types/schedule').ClassSchedule> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/schedules`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async bulkGenerate(payload: import('../types/admin').BulkGenerateSchedulesPayload): Promise<{ count: number; schedules: import('../types/schedule').ClassSchedule[] }> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/schedules/bulk-generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async cancel(id: string): Promise<import('../types/schedule').ClassSchedule> {
+    const token = tokenStorage.getAccessToken();
+    if (!token) throw new Error('No hay sesión activa');
+
+    const res = await fetch(`${API_BASE_URL}/schedules/${id}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return handleResponse(res);
   },
 };

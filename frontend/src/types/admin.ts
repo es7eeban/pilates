@@ -45,3 +45,45 @@ export interface QueryUsersParams {
   role?: string;
   isActive?: boolean;
 }
+
+export interface CreateClassTypePayload {
+  title: string;
+  description?: string;
+  defaultCapacity?: number;
+  defaultPrice: number;
+  durationMinutes?: number;
+  intensityLevel?: string;
+}
+
+export interface UpdateClassTypePayload {
+  title?: string;
+  description?: string;
+  defaultCapacity?: number;
+  defaultPrice?: number;
+  durationMinutes?: number;
+  intensityLevel?: string;
+  isActive?: boolean;
+}
+
+export interface CreateSchedulePayload {
+  classTypeId: string;
+  branchId?: string;
+  instructorId?: string;
+  startTime: string;
+  endTime: string;
+  capacity?: number;
+  price?: number;
+}
+
+export interface BulkGenerateSchedulesPayload {
+  startDate: string;
+  endDate: string;
+  daysOfWeek: number[];
+  timeSlots: Array<{ startTime: string; endTime: string }>;
+  classTypeId: string;
+  branchId?: string;
+  instructorId?: string;
+  capacity?: number;
+  price?: number;
+}
+
