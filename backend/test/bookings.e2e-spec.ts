@@ -13,7 +13,6 @@ describe('Branches & Bookings Flow (e2e)', () => {
   let adminToken: string;
   let clientToken: string;
   let providenciaBranchId: string;
-  let availableScheduleId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -69,7 +68,6 @@ describe('Branches & Bookings Flow (e2e)', () => {
         },
       });
     }
-    availableScheduleId = schedule.id;
   });
 
   afterAll(async () => {
