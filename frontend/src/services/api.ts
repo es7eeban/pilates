@@ -1,14 +1,23 @@
 import type { AuthResponse, LoginPayload, RegisterPayload, User } from '../types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
+function getApiBaseUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_URL || '').trim();
+  if (!envUrl) return 'http://localhost:4000/api/v1';
+  const trimmed = envUrl.replace(/\/+$/, '');
+  if (!trimmed.endsWith('/api/v1')) {
+    return `${trimmed}/api/v1`;
+  }
+  return trimmed;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export function resolveMediaUrl(url?: string | null): string {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  const backendHost = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1')
-    .replace(/\/api\/v1\/?$/, '');
+  const backendHost = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
   return `${backendHost}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
