@@ -7,95 +7,113 @@ import {
   XCircle,
   FileText,
   Calendar,
-  Mail,
-  MessageSquare,
   Check,
   RefreshCw,
   Eye,
-  Shield,
-  Copy,
   CheckCheck,
+  MapPin,
+  Clock,
+  ExternalLink,
+  BookOpen,
 } from 'lucide-react';
-import { notificationsApi } from '../services/api';
+import { notificationsApi, bookingsApi, resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import type { AppNotification } from '../types/notification';
 
 interface NotificationsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialNotificationId?: string | null;
   onNotificationsChanged?: () => void;
+  onOpenMyBookings?: () => void;
+  onOpenAdminVouchers?: () => void;
 }
 
 export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   isOpen,
   onClose,
+  initialNotificationId,
   onNotificationsChanged,
+  onOpenMyBookings,
+  onOpenAdminVouchers,
 }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  const [activeTab, setActiveTab] = useState<'my' | 'admin'>('my');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [adminLogs, setAdminLogs] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Inspector modal para previsualizar Email y WhatsApp
+  // Modal de detalle y gestión de la notificación seleccionada
   const [inspectingNotification, setInspectingNotification] = useState<AppNotification | null>(null);
-  const [previewTab, setPreviewTab] = useState<'email' | 'whatsapp'>('email');
-  const [copiedText, setCopiedText] = useState(false);
+  const [processingAction, setProcessingAction] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNotifications([]);
+    setUnreadCount(0);
+    setInspectingNotification(null);
+  }, [user?.id]);
+
+  const handleMarkAsRead = useCallback(
+    async (id: string) => {
+      try {
+        await notificationsApi.markAsRead(id);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        );
+        setUnreadCount((c) => Math.max(0, c - 1));
+        onNotificationsChanged?.();
+      } catch (err: any) {
+        console.error(err);
+      }
+    },
+    [onNotificationsChanged],
+  );
 
   const fetchMyNotifications = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true);
       setError(null);
       const res = await notificationsApi.getMy();
-      setNotifications(res.notifications);
-      setUnreadCount(res.unreadCount);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar notificaciones');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      // Filtrado defensivo en cliente para garantizar asociación estricta al usuario actual
+      const strictlyMine = (res.notifications || []).filter((n) => n.userId === user.id);
+      setNotifications(strictlyMine);
+      setUnreadCount(strictlyMine.filter((n) => !n.read).length);
 
-  const fetchAdminLogs = useCallback(async () => {
-    if (!isAdmin) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const logs = await notificationsApi.getAdminLogs(50);
-      setAdminLogs(logs);
+      if (initialNotificationId) {
+        const target = strictlyMine.find((n) => n.id === initialNotificationId);
+        if (target) {
+          setInspectingNotification(target);
+          setShowRejectInput(false);
+          setRejectReason('');
+          setActionFeedback(null);
+          if (!target.read) {
+            handleMarkAsRead(target.id);
+          }
+        }
+      }
     } catch (err: any) {
-      setError(err.message || 'Error al cargar auditoría');
+      setError(err.message || 'Error al cargar tus notificaciones');
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [user, initialNotificationId, handleMarkAsRead]);
 
   useEffect(() => {
     if (isOpen) {
-      if (activeTab === 'my') {
-        fetchMyNotifications();
-      } else {
-        fetchAdminLogs();
-      }
+      fetchMyNotifications();
+    } else {
+      setInspectingNotification(null);
+      setShowRejectInput(false);
+      setRejectReason('');
+      setActionFeedback(null);
     }
-  }, [isOpen, activeTab, fetchMyNotifications, fetchAdminLogs]);
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await notificationsApi.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
-      setUnreadCount((c) => Math.max(0, c - 1));
-      onNotificationsChanged?.();
-    } catch (err: any) {
-      console.error(err);
-    }
-  };
+  }, [isOpen, fetchMyNotifications]);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -108,10 +126,51 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   };
 
-  const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(true);
-    setTimeout(() => setCopiedText(false), 2000);
+  const handleOpenDetail = (notif: AppNotification) => {
+    setInspectingNotification(notif);
+    setShowRejectInput(false);
+    setRejectReason('');
+    setActionFeedback(null);
+    if (!notif.read) {
+      handleMarkAsRead(notif.id);
+    }
+  };
+
+  const handleAdminApproveVoucher = async (bookingId: string, notifId: string) => {
+    setProcessingAction(true);
+    setActionFeedback(null);
+    try {
+      await bookingsApi.approveVoucher(bookingId);
+      await handleMarkAsRead(notifId);
+      setActionFeedback('¡Comprobante aprobado! Se ha enviado la notificación de confirmación al alumno.');
+      onNotificationsChanged?.();
+      fetchMyNotifications();
+    } catch (err: any) {
+      setError(err.message || 'No se pudo aprobar el comprobante');
+    } finally {
+      setProcessingAction(false);
+    }
+  };
+
+  const handleAdminRejectVoucher = async (bookingId: string, notifId: string) => {
+    if (!rejectReason.trim()) {
+      alert('Indica el motivo del rechazo para informar al alumno.');
+      return;
+    }
+    setProcessingAction(true);
+    setActionFeedback(null);
+    try {
+      await bookingsApi.rejectVoucher(bookingId, rejectReason.trim());
+      await handleMarkAsRead(notifId);
+      setShowRejectInput(false);
+      setActionFeedback('Comprobante rechazado y cupo liberado. Se ha enviado la notificación al alumno.');
+      onNotificationsChanged?.();
+      fetchMyNotifications();
+    } catch (err: any) {
+      setError(err.message || 'No se pudo rechazar el comprobante');
+    } finally {
+      setProcessingAction(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -121,12 +180,13 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       case 'PAYMENT_APPROVED':
         return <CheckCircle2 className="w-5 h-5 text-emerald-600" />;
       case 'PAYMENT_REJECTED':
+      case 'SCHEDULE_CANCELLED':
         return <XCircle className="w-5 h-5 text-red-600" />;
       case 'BOOKING_CANCELLED':
+      case 'SCHEDULE_UPDATED':
         return <AlertCircle className="w-5 h-5 text-amber-600" />;
       case 'VOUCHER_UPLOADED':
         return <FileText className="w-5 h-5 text-blue-600" />;
-      case 'BOOKING_CREATED':
       default:
         return <Calendar className="w-5 h-5 text-sage-600" />;
     }
@@ -135,20 +195,23 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'PAYMENT_APPROVED':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">Aprobado</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">Pago Aprobado</span>;
       case 'PAYMENT_REJECTED':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">Rechazado</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">Pago Rechazado</span>;
       case 'BOOKING_CANCELLED':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">Cancelado</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">Reserva Cancelada</span>;
       case 'VOUCHER_UPLOADED':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800">Comprobante</span>;
-      case 'BOOKING_CREATED':
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800">Comprobante por Validar</span>;
+      case 'SCHEDULE_UPDATED':
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900">Cambio de Horario / Sede</span>;
+      case 'SCHEDULE_CANCELLED':
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">Clase Suspendida</span>;
+      case 'WAITLIST_OFFER':
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800">Cupo Liberado</span>;
       default:
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-sage-100 text-sage-800">Nueva Reserva</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-sage-100 text-sage-800">Aviso de Reserva</span>;
     }
   };
-
-  const list = activeTab === 'my' ? notifications : adminLogs;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -161,7 +224,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-sage-900 leading-tight">Centro de Notificaciones</h2>
+                <h2 className="text-lg font-bold text-sage-900 leading-tight">
+                  Avisos & Notificaciones
+                </h2>
                 {unreadCount > 0 && (
                   <span className="px-2 py-0.5 bg-red-500 text-white text-[11px] font-bold rounded-full">
                     {unreadCount} sin leer
@@ -169,17 +234,28 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-charcoal-muted">
-                Confirmaciones de reserva, pagos y avisos en tiempo real
+                {isAdmin
+                  ? 'Bandeja personal del administrador: comprobantes recibidos y alertas operativas'
+                  : 'Tus avisos personales de confirmación de clases, pagos y cambios de agenda'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="px-3 py-1.5 text-xs font-semibold text-sage-700 hover:text-sage-900 bg-white hover:bg-sand-100 border border-sand-200 rounded-xl transition flex items-center gap-1.5"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Marcar todo leído</span>
+              </button>
+            )}
             <button
-              onClick={() => (activeTab === 'my' ? fetchMyNotifications() : fetchAdminLogs())}
+              onClick={fetchMyNotifications}
               disabled={loading}
               className="p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
-              title="Refrescar"
+              title="Actualizar"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sage-600' : ''}`} />
             </button>
@@ -192,101 +268,59 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           </div>
         </div>
 
-        {/* Tabs & Controls */}
-        <div className="px-6 py-3 bg-white border-b border-sand-200 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-sand-100 rounded-xl text-xs font-medium">
-            <button
-              onClick={() => setActiveTab('my')}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                activeTab === 'my'
-                  ? 'bg-white text-sage-900 font-bold shadow-sm'
-                  : 'text-charcoal-muted hover:text-charcoal'
-              }`}
-            >
-              Mis Avisos
-            </button>
-            {isAdmin && (
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1 ${
-                  activeTab === 'admin'
-                    ? 'bg-white text-sage-900 font-bold shadow-sm'
-                    : 'text-charcoal-muted hover:text-charcoal'
-                }`}
-              >
-                <Shield className="w-3.5 h-3.5 text-terra" />
-                Auditoría Global
-              </button>
-            )}
-          </div>
-
-          {activeTab === 'my' && unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllAsRead}
-              className="text-xs text-sage-700 hover:text-sage-900 font-semibold flex items-center gap-1 px-3 py-1.5 bg-sage-50 hover:bg-sage-100 rounded-xl border border-sage-200 transition"
-            >
-              <CheckCheck className="w-3.5 h-3.5" />
-              Marcar todo como leído
-            </button>
-          )}
-        </div>
-
-        {/* List Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-sand-50/30">
+        {/* List Body */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-3">
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs">
-              {error}
+            <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          {loading && list.length === 0 ? (
-            <div className="py-12 text-center text-charcoal-muted">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto text-sage-500 mb-2" />
-              <p className="text-xs">Cargando notificaciones...</p>
+          {loading ? (
+            <div className="py-12 text-center text-sm text-charcoal-muted">
+              Cargando tus notificaciones...
             </div>
-          ) : list.length === 0 ? (
-            <div className="py-12 text-center text-charcoal-muted">
-              <div className="w-12 h-12 rounded-2xl bg-sand-100 mx-auto flex items-center justify-center text-charcoal-muted mb-3">
-                <Bell className="w-6 h-6 opacity-40" />
+          ) : notifications.length === 0 ? (
+            <div className="py-14 text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-sand-100 text-charcoal-muted flex items-center justify-center mx-auto">
+                <Bell className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-charcoal">Sin notificaciones</h3>
-              <p className="text-xs mt-1 max-w-sm mx-auto">
-                {activeTab === 'my'
-                  ? 'Aquí verás los comprobantes de tus clases agendadas, confirmaciones de pago y recordatorios.'
-                  : 'Aún no hay notificaciones transaccionales registradas en el sistema.'}
+              <p className="text-sm font-bold text-charcoal">No tienes notificaciones</p>
+              <p className="text-xs text-charcoal-muted max-w-xs mx-auto">
+                {isAdmin
+                  ? 'Cuando un alumno envíe un comprobante de transferencia, aparecerá aquí para tu validación.'
+                  : 'Cuando el administrador valide tu comprobante o haya avisos sobre tus clases, aparecerán aquí.'}
               </p>
             </div>
           ) : (
-            list.map((notif) => (
+            notifications.map((n) => (
               <div
-                key={notif.id}
-                className={`p-4 rounded-2xl border transition relative ${
-                  notif.read
-                    ? 'bg-white border-sand-200 hover:border-sand-300'
-                    : 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300 shadow-sm'
+                key={n.id}
+                onClick={() => handleOpenDetail(n)}
+                className={`p-4 rounded-2xl border transition cursor-pointer ${
+                  !n.read
+                    ? 'bg-sage-50/60 border-sage-300 shadow-xs hover:border-sage-400'
+                    : 'bg-white border-sand-200 hover:border-sand-300'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-sand-50 border border-sand-200 shrink-0 mt-0.5">
-                    {getTypeIcon(notif.type)}
-                  </div>
-
+                <div className="flex items-start gap-3.5">
+                  <div className="mt-0.5 shrink-0">{getTypeIcon(n.type)}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                      <div className="flex items-center gap-2">
-                        {getTypeBadge(notif.type)}
-                        {!notif.read && (
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sin leer" />
-                        )}
-                        {notif.metadata?.bookingCode && (
-                          <span className="font-mono text-[11px] font-bold text-sage-800 bg-sand-100 px-1.5 py-0.5 rounded">
-                            {notif.metadata.bookingCode}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {getTypeBadge(n.type)}
+                        {n.metadata?.bookingCode && (
+                          <span className="font-mono text-[11px] font-bold text-sage-800 bg-sand-100 px-2 py-0.5 rounded">
+                            {n.metadata.bookingCode}
                           </span>
                         )}
+                        {!n.read && (
+                          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" title="Sin leer" />
+                        )}
                       </div>
-
                       <span className="text-[11px] text-charcoal-muted">
-                        {new Date(notif.createdAt).toLocaleDateString('es-CL', {
+                        {new Date(n.createdAt).toLocaleString('es-CL', {
                           day: '2-digit',
                           month: 'short',
                           hour: '2-digit',
@@ -295,57 +329,32 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                       </span>
                     </div>
 
-                    <h4 className="text-xs sm:text-sm font-bold text-sage-900 leading-snug">
-                      {notif.title}
-                    </h4>
+                    <h4 className="text-sm font-bold text-charcoal leading-snug">{n.title}</h4>
+                    <p className="text-xs text-charcoal-muted mt-1 line-clamp-2">{n.message}</p>
 
-                    {activeTab === 'admin' && notif.user && (
-                      <p className="text-[11px] text-charcoal-muted mt-0.5">
-                        Destinatario: <span className="font-semibold text-charcoal">{notif.user.name}</span> ({notif.user.email})
-                      </p>
-                    )}
+                    <div className="mt-3 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDetail(n);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#3a1b38] hover:bg-[#261025] text-white text-[11px] font-bold transition inline-flex items-center gap-1.5 shadow-xs"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Abrir y Gestionar Notificación</span>
+                      </button>
 
-                    <p className="text-xs text-charcoal-muted mt-1 leading-relaxed">
-                      {notif.message}
-                    </p>
-
-                    {/* Metadata Action Row */}
-                    <div className="mt-3 pt-2.5 border-t border-sand-100 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        {notif.metadata?.email && (
-                          <button
-                            onClick={() => {
-                              setInspectingNotification(notif);
-                              setPreviewTab('email');
-                            }}
-                            className="text-[11px] font-semibold text-sage-700 hover:text-sage-900 hover:underline flex items-center gap-1 bg-sand-100 px-2 py-1 rounded-lg transition"
-                          >
-                            <Mail className="w-3 h-3 text-sage-600" />
-                            Ver Correo Simulado
-                          </button>
-                        )}
-
-                        {notif.metadata?.whatsapp && (
-                          <button
-                            onClick={() => {
-                              setInspectingNotification(notif);
-                              setPreviewTab('whatsapp');
-                            }}
-                            className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg transition border border-emerald-200"
-                          >
-                            <MessageSquare className="w-3 h-3 text-emerald-600" />
-                            Ver WhatsApp Simulado
-                          </button>
-                        )}
-                      </div>
-
-                      {!notif.read && activeTab === 'my' && (
+                      {!n.read && (
                         <button
-                          onClick={() => handleMarkAsRead(notif.id)}
-                          className="text-[11px] text-charcoal-muted hover:text-emerald-700 font-medium flex items-center gap-1"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsRead(n.id);
+                          }}
+                          className="text-[11px] font-semibold text-sage-700 hover:text-sage-900 inline-flex items-center gap-1"
                         >
-                          <Check className="w-3 h-3" />
-                          Marcar leída
+                          <Check className="w-3.5 h-3.5" /> Marcar leída
                         </button>
                       )}
                     </div>
@@ -356,127 +365,245 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="px-6 py-3 bg-sand-50/80 border-t border-sand-200 flex items-center justify-between text-xs text-charcoal-muted">
-          <span>Sistema de mensajería transaccional activo</span>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold bg-white hover:bg-sand-100 text-charcoal border border-sand-300 rounded-xl transition"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-
-      {/* Inspector Modal para Email y WhatsApp simulados */}
-      {inspectingNotification && (
-        <div className="fixed inset-0 z-60 bg-charcoal/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="px-5 py-4 border-b border-sand-200 bg-sand-50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-sage-600" />
-                <h3 className="text-sm font-bold text-sage-900">
-                  Despacho Multicanal: {inspectingNotification.metadata?.bookingCode || 'Notificación'}
-                </h3>
+        {/* Sub-Modal: Detalle y Gestión Directa de la Notificación Seleccionada */}
+        {inspectingNotification && (
+          <div className="fixed inset-0 z-60 bg-charcoal/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-sand-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-sand-200 bg-sand-50 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  {getTypeIcon(inspectingNotification.type)}
+                  <div>
+                    <h3 className="text-sm font-bold text-sage-900">Detalle de la Notificación</h3>
+                    <span className="text-[11px] text-charcoal-muted">
+                      {new Date(inspectingNotification.createdAt).toLocaleString('es-CL')}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectingNotification(null)}
+                  className="p-1.5 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setInspectingNotification(null)}
-                className="p-1.5 text-charcoal-muted hover:text-charcoal rounded-lg hover:bg-sand-200 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Selector de canal */}
-            <div className="px-5 py-2.5 bg-sand-100/50 border-b border-sand-200 flex items-center gap-2">
-              <button
-                onClick={() => setPreviewTab('email')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-                  previewTab === 'email'
-                    ? 'bg-white text-sage-900 shadow-sm'
-                    : 'text-charcoal-muted hover:text-charcoal'
-                }`}
-              >
-                <Mail className="w-3.5 h-3.5 text-sage-600" />
-                Email Transaccional
-              </button>
-              <button
-                onClick={() => setPreviewTab('whatsapp')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-                  previewTab === 'whatsapp'
-                    ? 'bg-white text-emerald-800 shadow-sm'
-                    : 'text-charcoal-muted hover:text-charcoal'
-                }`}
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                WhatsApp Mensaje
-              </button>
-            </div>
-
-            {/* Canal Content */}
-            <div className="p-5 flex-1 overflow-y-auto">
-              {previewTab === 'email' && inspectingNotification.metadata?.email && (
-                <div className="space-y-3">
-                  <div className="p-3 bg-sand-50 rounded-xl text-xs border border-sand-200 space-y-1">
-                    <div>
-                      <span className="text-charcoal-muted font-medium">Para: </span>
-                      <strong className="text-charcoal">{inspectingNotification.metadata.email.to}</strong>
-                    </div>
-                    <div>
-                      <span className="text-charcoal-muted font-medium">Asunto: </span>
-                      <strong className="text-sage-900">{inspectingNotification.metadata.email.subject}</strong>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-white rounded-xl border border-sand-200 text-xs font-sans whitespace-pre-wrap leading-relaxed text-charcoal">
-                    {inspectingNotification.metadata.email.body}
-                  </div>
+              <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {getTypeBadge(inspectingNotification.type)}
+                  {inspectingNotification.metadata?.bookingCode && (
+                    <span className="font-mono text-xs font-bold text-sage-900 bg-sand-100 px-2.5 py-0.5 rounded-lg border border-sand-200">
+                      Código: {inspectingNotification.metadata.bookingCode}
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {previewTab === 'whatsapp' && inspectingNotification.metadata?.whatsapp && (
-                <div className="space-y-3">
-                  <div className="p-3 bg-emerald-50 rounded-xl text-xs border border-emerald-200">
-                    <span className="text-emerald-800 font-medium">Destino celular: </span>
-                    <strong className="text-emerald-950">{inspectingNotification.metadata.whatsapp.to || '+569XXXXXXXX'}</strong>
+                <div>
+                  <h4 className="text-base font-bold text-charcoal">
+                    {inspectingNotification.title}
+                  </h4>
+                  <p className="text-xs text-charcoal leading-relaxed mt-1.5 bg-sand-50/80 p-3.5 rounded-2xl border border-sand-200">
+                    {inspectingNotification.message}
+                  </p>
+                </div>
+
+                {/* Datos asociados a la reserva o sesión */}
+                {(inspectingNotification.metadata?.branchName ||
+                  inspectingNotification.metadata?.startTime ||
+                  inspectingNotification.metadata?.studentName ||
+                  inspectingNotification.metadata?.reason) && (
+                  <div className="p-4 rounded-2xl bg-white border border-sand-200 space-y-2 text-xs">
+                    {inspectingNotification.metadata?.studentName && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-charcoal-muted">Alumno:</span>
+                        <span className="font-bold text-charcoal">
+                          {inspectingNotification.metadata.studentName} ({inspectingNotification.metadata.studentEmail})
+                        </span>
+                      </div>
+                    )}
+                    {inspectingNotification.metadata?.branchName && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-charcoal-muted flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-sage-600" /> Sede:
+                        </span>
+                        <span className="font-bold text-charcoal">
+                          {inspectingNotification.metadata.branchName}
+                        </span>
+                      </div>
+                    )}
+                    {inspectingNotification.metadata?.startTime && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-charcoal-muted flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-sage-600" /> Fecha y Hora:
+                        </span>
+                        <span className="font-semibold text-charcoal">
+                          {new Date(inspectingNotification.metadata.startTime).toLocaleDateString('es-CL', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            timeZone: 'UTC',
+                          })}{' '}
+                          ·{' '}
+                          {new Date(inspectingNotification.metadata.startTime).toLocaleTimeString('es-CL', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: 'UTC',
+                          })}{' '}
+                          hrs
+                        </span>
+                      </div>
+                    )}
+                    {inspectingNotification.metadata?.reason && (
+                      <div className="pt-2 border-t border-sand-100">
+                        <span className="text-charcoal-muted block mb-0.5">Motivo informado:</span>
+                        <span className="font-semibold text-red-700">
+                          "{inspectingNotification.metadata.reason}"
+                        </span>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200 text-xs text-charcoal whitespace-pre-wrap leading-relaxed relative">
-                    {inspectingNotification.metadata.whatsapp.message}
-                    <div className="mt-3 flex justify-end">
-                      <button
-                        onClick={() => handleCopyText(inspectingNotification.metadata?.whatsapp?.message || '')}
-                        className="text-[11px] font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-emerald-300 shadow-sm transition"
-                      >
-                        {copiedText ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            Copiado
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            Copiar texto
-                          </>
+                {actionFeedback && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <span>{actionFeedback}</span>
+                  </div>
+                )}
+
+                {/* Gestión directa de Voucher para el Administrador */}
+                {isAdmin &&
+                  inspectingNotification.type === 'VOUCHER_UPLOADED' &&
+                  inspectingNotification.metadata?.bookingId && (
+                    <div className="p-4 rounded-2xl bg-sand-50 border border-sand-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-sage-900">
+                          Gestión de Comprobante Recibido
+                        </span>
+                        {inspectingNotification.metadata?.voucherUrl && (
+                          <a
+                            href={resolveMediaUrl(inspectingNotification.metadata.voucherUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-bold text-[#3a1b38] hover:underline inline-flex items-center gap-1"
+                          >
+                            <span>Ver Archivo Adjunto</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+                      </div>
 
-            <div className="p-4 border-t border-sand-200 bg-sand-50 flex justify-end">
-              <button
-                onClick={() => setInspectingNotification(null)}
-                className="px-4 py-1.5 text-xs font-semibold bg-sage-600 hover:bg-sage-700 text-white rounded-xl shadow-sm transition"
-              >
-                Entendido
-              </button>
+                      {!actionFeedback && (
+                        <>
+                          {!showRejectInput ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={processingAction}
+                                onClick={() =>
+                                  handleAdminApproveVoucher(
+                                    inspectingNotification.metadata!.bookingId!,
+                                    inspectingNotification.id,
+                                  )
+                                }
+                                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>{processingAction ? 'Procesando...' : 'Aprobar Pago'}</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={processingAction}
+                                onClick={() => setShowRejectInput(true)}
+                                className="py-2.5 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition"
+                              >
+                                Rechazar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Motivo del rechazo (ej. Monto incompleto o imagen ilegible)"
+                                className="w-full px-3 py-2 text-xs bg-white border border-sand-300 rounded-xl focus:outline-none focus:border-red-500"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowRejectInput(false)}
+                                  className="px-3 py-1.5 text-xs font-semibold text-charcoal-muted hover:text-charcoal"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={processingAction}
+                                  onClick={() =>
+                                    handleAdminRejectVoucher(
+                                      inspectingNotification.metadata!.bookingId!,
+                                      inspectingNotification.id,
+                                    )
+                                  }
+                                  className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition disabled:opacity-50"
+                                >
+                                  Confirmar Rechazo
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                {/* Acciones rápidas para el Alumno */}
+                {!isAdmin && onOpenMyBookings && (
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInspectingNotification(null);
+                        onClose();
+                        onOpenMyBookings();
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#3a1b38] hover:bg-[#261025] text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      <span>Ir a Mis Reservas Activas</span>
+                    </button>
+                  </div>
+                )}
+
+                {isAdmin && onOpenAdminVouchers && inspectingNotification.type === 'VOUCHER_UPLOADED' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectingNotification(null);
+                      onClose();
+                      onOpenAdminVouchers();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-white hover:bg-sand-100 text-charcoal border border-sand-200 text-xs font-semibold transition"
+                  >
+                    Abrir bandeja completa de Validación de Pagos
+                  </button>
+                )}
+              </div>
+
+              <div className="px-6 py-3.5 border-t border-sand-200 bg-sand-50/70 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setInspectingNotification(null)}
+                  className="px-4 py-2 rounded-xl bg-white hover:bg-sand-100 text-charcoal border border-sand-200 text-xs font-bold transition"
+                >
+                  Cerrar Detalle
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

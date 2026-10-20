@@ -4,6 +4,7 @@ export interface InstructorClassSchedule extends ClassSchedule {
   stats?: {
     capacity: number;
     enrolled: number;
+    pendingValidation?: number;
     availableSlots: number;
     attended: number;
     noShow: number;
@@ -16,6 +17,7 @@ export interface ClassRosterResponse {
   schedule: ClassSchedule;
   stats: {
     totalEnrolled: number;
+    pendingValidationCount?: number;
     attendedCount: number;
     noShowCount: number;
     excusedCount: number;

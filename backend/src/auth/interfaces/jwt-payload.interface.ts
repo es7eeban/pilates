@@ -30,6 +30,10 @@ export interface AuthResponse {
     phone: string;
     role: Role;
     isInstructor: boolean;
+    favoriteBranchId?: string | null;
+    favoriteTimeSchedule?: string | null;
+    favoriteBranch?: any;
+    allowedMenus?: string[];
   };
   tokens: AuthTokens;
 }

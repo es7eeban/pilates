@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Role, User, Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -30,17 +30,88 @@ export const safeUserSelect = {
   favoriteBranch: true,
 } satisfies Prisma.UserSelect;
 
+const DEFAULT_ROLE_MENUS: Array<{
+  role: Role;
+  menuKey: string;
+  label: string;
+  enabled: boolean;
+  sortOrder: number;
+}> = [
+  // ADMIN: Acceso total en V1 (también es el instructor por defecto)
+  { role: Role.ADMIN, menuKey: 'CATALOG', label: 'Panel & Agenda en Vivo', enabled: true, sortOrder: 1 },
+  { role: Role.ADMIN, menuKey: 'ADMIN_VOUCHERS', label: 'Validación de Pagos', enabled: true, sortOrder: 2 },
+  { role: Role.ADMIN, menuKey: 'MY_BOOKINGS', label: 'Reservas Activas', enabled: true, sortOrder: 3 },
+  { role: Role.ADMIN, menuKey: 'CLASS_HISTORY', label: 'Historial de Clases & Alumnos', enabled: true, sortOrder: 4 },
+  { role: Role.ADMIN, menuKey: 'NOTIFICATIONS', label: 'Avisos & Notificaciones', enabled: true, sortOrder: 5 },
+  { role: Role.ADMIN, menuKey: 'ATTENDANCE', label: 'Asistencia & Check-in', enabled: true, sortOrder: 6 },
+  { role: Role.ADMIN, menuKey: 'ADMIN_CLASSES', label: 'Clases & Horarios', enabled: true, sortOrder: 7 },
+  { role: Role.ADMIN, menuKey: 'ADMIN_BRANCHES', label: 'Sedes', enabled: true, sortOrder: 8 },
+  { role: Role.ADMIN, menuKey: 'ADMIN_USERS', label: 'Usuarios & Roles', enabled: true, sortOrder: 9 },
+  { role: Role.ADMIN, menuKey: 'ACCOUNT', label: 'Mi Cuenta', enabled: true, sortOrder: 10 },
+
+  // CLIENT: Acceso a sus módulos de alumno en V1
+  { role: Role.CLIENT, menuKey: 'CATALOG', label: 'Inicio & Agenda en Vivo', enabled: true, sortOrder: 1 },
+  { role: Role.CLIENT, menuKey: 'MY_BOOKINGS', label: 'Mis Reservas Activas', enabled: true, sortOrder: 2 },
+  { role: Role.CLIENT, menuKey: 'CLASS_HISTORY', label: 'Historial de Clases', enabled: true, sortOrder: 3 },
+  { role: Role.CLIENT, menuKey: 'NOTIFICATIONS', label: 'Avisos & Notificaciones', enabled: true, sortOrder: 4 },
+  { role: Role.CLIENT, menuKey: 'ACCOUNT', label: 'Mi Cuenta', enabled: true, sortOrder: 5 },
+
+  // INSTRUCTOR: Reservado y deshabilitado en V1 (listo en BD para habilitar en V2)
+  { role: Role.INSTRUCTOR, menuKey: 'CATALOG', label: 'Inicio & Agenda en Vivo', enabled: false, sortOrder: 1 },
+  { role: Role.INSTRUCTOR, menuKey: 'ATTENDANCE', label: 'Mis Clases & Check-in', enabled: false, sortOrder: 2 },
+  { role: Role.INSTRUCTOR, menuKey: 'MY_BOOKINGS', label: 'Mis Reservas', enabled: false, sortOrder: 3 },
+  { role: Role.INSTRUCTOR, menuKey: 'CLASS_HISTORY', label: 'Historial de Clases', enabled: false, sortOrder: 4 },
+  { role: Role.INSTRUCTOR, menuKey: 'NOTIFICATIONS', label: 'Avisos & Notificaciones', enabled: false, sortOrder: 5 },
+  { role: Role.INSTRUCTOR, menuKey: 'ACCOUNT', label: 'Mi Cuenta', enabled: false, sortOrder: 6 },
+];
+
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByEmail(email: string): Promise<User | null> {
+  async onModuleInit() {
+    await this.ensureDefaultMenuPermissions();
+  }
+
+  async ensureDefaultMenuPermissions() {
+    try {
+      const count = await this.prisma.roleMenuPermission.count();
+      if (count === 0) {
+        await this.prisma.roleMenuPermission.createMany({
+          data: DEFAULT_ROLE_MENUS,
+          skipDuplicates: true,
+        });
+      }
+    } catch {
+      // Ignorar si la tabla aún no está inicializada en entorno aislado
+    }
+  }
+
+  async getAllowedMenusForRole(role: Role): Promise<string[]> {
+    try {
+      const perms = await this.prisma.roleMenuPermission.findMany({
+        where: { role, enabled: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      if (perms.length > 0) {
+        return perms.map((p) => p.menuKey);
+      }
+    } catch {
+      // Fallback
+    }
+    return DEFAULT_ROLE_MENUS.filter((m) => m.role === role && m.enabled).map((m) => m.menuKey);
+  }
+
+  async findByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
+      include: {
+        favoriteBranch: true,
+      },
     });
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -62,8 +133,33 @@ export class UsersService {
 
   async updatePreferences(
     userId: string,
-    data: { favoriteBranchId?: string | null; favoriteTimeSchedule?: string | null },
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      favoriteBranchId?: string | null;
+      favoriteTimeSchedule?: string | null;
+    },
   ) {
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!currentUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (data.email !== undefined) {
+      const normalizedEmail = data.email.toLowerCase().trim();
+      if (normalizedEmail !== currentUser.email) {
+        const existing = await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+        });
+        if (existing) {
+          throw new ConflictException('Ya existe otra cuenta registrada con este correo electrónico');
+        }
+      }
+    }
+
     if (data.favoriteBranchId) {
       const branch = await this.prisma.branch.findUnique({
         where: { id: data.favoriteBranchId },
@@ -76,6 +172,9 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
+        ...(data.name !== undefined && { name: data.name.trim() }),
+        ...(data.email !== undefined && { email: data.email.toLowerCase().trim() }),
+        ...(data.phone !== undefined && { phone: data.phone.trim() }),
         ...(data.favoriteBranchId !== undefined && { favoriteBranchId: data.favoriteBranchId }),
         ...(data.favoriteTimeSchedule !== undefined && { favoriteTimeSchedule: data.favoriteTimeSchedule }),
       },
@@ -84,11 +183,15 @@ export class UsersService {
       },
     });
 
+    const allowedMenus = await this.getAllowedMenusForRole(updated.role);
     const { passwordHash: _, ...safeUser } = updated;
-    return safeUser;
+    return {
+      ...safeUser,
+      allowedMenus,
+    };
   }
 
-  async create(data: CreateUserData): Promise<User> {
+  async create(data: CreateUserData) {
     const normalizedEmail = data.email.toLowerCase().trim();
     const existing = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -107,13 +210,16 @@ export class UsersService {
         role: data.role ?? Role.CLIENT,
         isInstructor: data.isInstructor ?? false,
       },
+      include: {
+        favoriteBranch: true,
+      },
     });
   }
 
   async listInstructors(): Promise<Pick<User, 'id' | 'name' | 'email' | 'phone' | 'role' | 'isInstructor'>[]> {
     return this.prisma.user.findMany({
       where: {
-        OR: [{ role: Role.INSTRUCTOR }, { isInstructor: true }],
+        OR: [{ role: Role.ADMIN }, { role: Role.INSTRUCTOR }, { isInstructor: true }],
         isActive: true,
       },
       select: {
@@ -186,7 +292,7 @@ export class UsersService {
         phone: dto.phone.trim(),
         passwordHash,
         role: dto.role ?? Role.CLIENT,
-        isInstructor: dto.isInstructor ?? (dto.role === Role.INSTRUCTOR),
+        isInstructor: dto.isInstructor ?? (dto.role === Role.INSTRUCTOR || dto.role === Role.ADMIN),
         favoriteBranchId: dto.favoriteBranchId,
       },
       select: safeUserSelect,

@@ -13,6 +13,7 @@ import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from './interfaces/jwt-payload.interface.js';
@@ -51,7 +52,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Obtener datos de perfil y rol del usuario autenticado' })
+  @ApiOperation({ summary: 'Obtener datos de perfil, sede favorita y menús permitidos del usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Datos del usuario actual' })
   @ApiResponse({ status: 401, description: 'No autorizado / Token ausente o inválido' })
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
@@ -61,11 +62,23 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('preferences')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Actualizar preferencias del alumno (Sede favorita, horario predilecto)' })
-  @ApiResponse({ status: 200, description: 'Preferencias actualizadas' })
+  @ApiOperation({ summary: 'Actualizar datos de contacto y preferencias del usuario (Sede favorita, horario)' })
+  @ApiResponse({ status: 200, description: 'Preferencias y datos actualizados' })
   async updatePreferences(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: import('./dto/update-preferences.dto.js').UpdatePreferencesDto,
+    @Body() dto: UpdatePreferencesDto,
+  ) {
+    return this.authService.updatePreferences(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Actualizar perfil y datos de contacto del usuario (Mi Cuenta)' })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado exitosamente' })
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdatePreferencesDto,
   ) {
     return this.authService.updatePreferences(user.id, dto);
   }

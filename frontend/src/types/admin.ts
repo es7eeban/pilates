@@ -66,7 +66,7 @@ export interface UpdateClassTypePayload {
 }
 
 export interface CreateSchedulePayload {
-  classTypeId: string;
+  classTypeId?: string;
   branchId?: string;
   instructorId?: string;
   startTime: string;
@@ -79,11 +79,26 @@ export interface BulkGenerateSchedulesPayload {
   startDate: string;
   endDate: string;
   daysOfWeek: number[];
-  timeSlots: Array<{ startTime: string; endTime: string }>;
-  classTypeId: string;
+  times: string[];
+  durationMinutes?: number;
+  classTypeId?: string;
   branchId?: string;
   instructorId?: string;
   capacity?: number;
   price?: number;
 }
 
+export interface UpdateSchedulePayload {
+  branchId?: string;
+  startTime?: string;
+  endTime?: string;
+  capacity?: number;
+  price?: number;
+  reason?: string;
+  notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
+}
+
+export interface CancelSchedulePayload {
+  reason?: string;
+  notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
+}

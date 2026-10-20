@@ -11,9 +11,13 @@ export interface User {
   favoriteBranchId?: string | null;
   favoriteTimeSchedule?: string | null;
   favoriteBranch?: import('./schedule.js').Branch | null;
+  allowedMenus?: string[];
 }
 
 export interface UpdatePreferencesPayload {
+  name?: string;
+  email?: string;
+  phone?: string;
   favoriteBranchId?: string | null;
   favoriteTimeSchedule?: string | null;
 }

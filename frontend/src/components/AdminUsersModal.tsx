@@ -5,7 +5,6 @@ import {
   Plus,
   User as UserIcon,
   Shield,
-  Sparkles,
   Phone,
   Mail,
   Edit2,
@@ -122,7 +121,7 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
     setEmail(u.email);
     setPhone(u.phone);
     setPassword('');
-    setRole(u.role);
+    setRole(u.role === 'INSTRUCTOR' ? 'ADMIN' : u.role);
     setIsInstructor(u.isInstructor);
     setFavoriteBranchId(u.favoriteBranchId || '');
     setIsFormOpen(true);
@@ -149,7 +148,7 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
           phone: phone.trim(),
           password: password.trim() ? password.trim() : undefined,
           role,
-          isInstructor,
+          isInstructor: role === 'ADMIN' ? true : isInstructor,
           favoriteBranchId: favoriteBranchId || null,
         };
         await usersApi.update(editingUser.id, payload);
@@ -161,7 +160,7 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
           phone: phone.trim(),
           password: password.trim() ? password.trim() : 'Pilates123!',
           role,
-          isInstructor: isInstructor || role === 'INSTRUCTOR',
+          isInstructor: role === 'ADMIN',
           favoriteBranchId: favoriteBranchId || undefined,
         };
         await usersApi.create(payload);
@@ -196,24 +195,19 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
     }
   };
 
-  const getRoleBadge = (userRole: UserRole, isInst: boolean) => {
+  const getRoleBadge = (userRole: UserRole) => {
     switch (userRole) {
       case 'ADMIN':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-terra-light text-terra border border-terra/20">
-            <Shield className="w-3 h-3" /> Admin {isInst ? '+ Instructor' : ''}
-          </span>
-        );
       case 'INSTRUCTOR':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-sage-100 text-sage-800 border border-sage-300">
-            <Sparkles className="w-3 h-3" /> Instructor
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-terra-light text-terra border border-terra/20">
+            <Shield className="w-3 h-3" /> Administrador
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <UserIcon className="w-3 h-3" /> Alumno {isInst ? '(Instructor)' : ''}
+            <UserIcon className="w-3 h-3" /> Alumno
           </span>
         );
     }
@@ -226,13 +220,13 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
         <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-sand-50/60">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-sage-900">Gestión de Usuarios & Roles</h2>
+              <h2 className="text-lg font-bold text-sage-900">Gestión de Usuarios</h2>
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-terra-light text-terra border border-terra/20">
-                Admin
+                Admin · V1
               </span>
             </div>
             <p className="text-xs text-charcoal-muted mt-0.5">
-              Administra cuentas de alumnos, instructores y administradores del estudio
+              Administra cuentas de alumnos y administradores del estudio
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -290,16 +284,6 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
                 Alumnos
               </button>
               <button
-                onClick={() => setSelectedRoleFilter('INSTRUCTOR')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-                  selectedRoleFilter === 'INSTRUCTOR'
-                    ? 'bg-sage-800 text-white'
-                    : 'bg-white text-charcoal hover:bg-sand-100 border border-sand-200'
-                }`}
-              >
-                Instructores
-              </button>
-              <button
                 onClick={() => setSelectedRoleFilter('ADMIN')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
                   selectedRoleFilter === 'ADMIN'
@@ -307,7 +291,7 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
                     : 'bg-white text-charcoal hover:bg-sand-100 border border-sand-200'
                 }`}
               >
-                Admins
+                Administradores
               </button>
             </div>
           </div>
@@ -405,12 +389,11 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
                     onChange={(e) => {
                       const nextRole = e.target.value as UserRole;
                       setRole(nextRole);
-                      if (nextRole === 'INSTRUCTOR') setIsInstructor(true);
+                      setIsInstructor(nextRole === 'ADMIN');
                     }}
                     className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
                   >
                     <option value="CLIENT">Alumno / Cliente (CLIENT)</option>
-                    <option value="INSTRUCTOR">Instructor de Pilates (INSTRUCTOR)</option>
                     <option value="ADMIN">Administrador General (ADMIN)</option>
                   </select>
                 </div>
@@ -429,23 +412,6 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
                       </option>
                     ))}
                   </select>
-                </div>
-
-                <div className="sm:col-span-2 pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={isInstructor}
-                      onChange={(e) => setIsInstructor(e.target.checked)}
-                      className="rounded text-sage-600 focus:ring-sage-500"
-                    />
-                    <span className="font-semibold text-charcoal">
-                      Habilitado para impartir clases y tomar asistencia en sala (Instructor)
-                    </span>
-                  </label>
-                  <span className="text-[11px] text-charcoal-muted block ml-5 mt-0.5">
-                    Permite que este usuario aparezca en la lista de instructores al programar horarios y acceda al módulo de asistencia.
-                  </span>
                 </div>
               </div>
 
@@ -499,7 +465,7 @@ export const AdminUsersModal: React.FC<AdminUsersModalProps> = ({
                     <div className="space-y-1 text-xs">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-bold text-sm text-sage-900">{u.name}</span>
-                        {getRoleBadge(u.role, u.isInstructor)}
+                        {getRoleBadge(u.role)}
                         {u.isActive === false && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-200 text-stone-700">
                             Inactivo

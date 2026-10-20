@@ -182,6 +182,8 @@ enum NotificationType {
   WAITLIST_JOINED
   WAITLIST_OFFER
   WAITLIST_EXPIRED
+  SCHEDULE_UPDATED
+  SCHEDULE_CANCELLED
 }
 
 enum NotificationChannel {
@@ -235,4 +237,17 @@ model WaitlistEntry {
   @@map("waitlist_entries")
 }
 
+model RoleMenuPermission {
+  id        String   @id @default(uuid())
+  role      Role
+  menuKey   String   @map("menu_key") @db.VarChar(60)
+  label     String   @db.VarChar(120)
+  enabled   Boolean  @default(true)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([role, menuKey])
+  @@index([role, enabled])
+  @@map("role_menu_permissions")
+}

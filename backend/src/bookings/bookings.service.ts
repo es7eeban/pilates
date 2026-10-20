@@ -352,6 +352,36 @@ export class BookingsService {
     });
   }
 
+  async getAllBookings() {
+    return this.prisma.booking.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        schedule: {
+          include: {
+            classType: true,
+            branch: true,
+            instructor: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        payment: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async approveVoucher(id: string, adminId: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
@@ -421,6 +451,16 @@ export class BookingsService {
       });
     } catch (err) {
       console.error('Error al emitir notificación de pago aprobado:', err);
+    }
+
+    // Resolver y marcar como leídas las notificaciones de revisión de comprobante enviadas a los administradores
+    try {
+      await this.notificationsService.resolveAdminVoucherNotifications(
+        approvedBooking.bookingCode,
+        approvedBooking.id,
+      );
+    } catch (err) {
+      console.error('Error al resolver notificaciones de comprobante de admin:', err);
     }
 
     return approvedBooking;
@@ -498,6 +538,16 @@ export class BookingsService {
       }, dto.reason);
     } catch (err) {
       console.error('Error al emitir notificación de pago rechazado:', err);
+    }
+
+    // Resolver y marcar como leídas las notificaciones de revisión de comprobante enviadas a los administradores
+    try {
+      await this.notificationsService.resolveAdminVoucherNotifications(
+        rejectedBooking.bookingCode,
+        rejectedBooking.id,
+      );
+    } catch (err) {
+      console.error('Error al resolver notificaciones de comprobante de admin:', err);
     }
 
     return rejectedBooking;

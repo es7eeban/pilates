@@ -27,12 +27,15 @@ export class AuthService {
       role: Role.CLIENT,
     });
 
-    const tokens = await this.generateTokens({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      isInstructor: user.isInstructor,
-    });
+    const [tokens, allowedMenus] = await Promise.all([
+      this.generateTokens({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isInstructor: user.isInstructor,
+      }),
+      this.usersService.getAllowedMenusForRole(user.role),
+    ]);
 
     return {
       user: {
@@ -42,6 +45,10 @@ export class AuthService {
         phone: user.phone,
         role: user.role,
         isInstructor: user.isInstructor,
+        favoriteBranchId: user.favoriteBranchId,
+        favoriteTimeSchedule: user.favoriteTimeSchedule,
+        favoriteBranch: user.favoriteBranch,
+        allowedMenus,
       },
       tokens,
     };
@@ -63,12 +70,15 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const tokens = await this.generateTokens({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      isInstructor: user.isInstructor,
-    });
+    const [tokens, allowedMenus] = await Promise.all([
+      this.generateTokens({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isInstructor: user.isInstructor,
+      }),
+      this.usersService.getAllowedMenusForRole(user.role),
+    ]);
 
     return {
       user: {
@@ -78,6 +88,10 @@ export class AuthService {
         phone: user.phone,
         role: user.role,
         isInstructor: user.isInstructor,
+        favoriteBranchId: user.favoriteBranchId,
+        favoriteTimeSchedule: user.favoriteTimeSchedule,
+        favoriteBranch: user.favoriteBranch,
+        allowedMenus,
       },
       tokens,
     };
@@ -115,13 +129,23 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
+    const allowedMenus = await this.usersService.getAllowedMenusForRole(user.role);
     const { passwordHash: _, ...safeUser } = user;
-    return safeUser;
+    return {
+      ...safeUser,
+      allowedMenus,
+    };
   }
 
   async updatePreferences(
     userId: string,
-    data: { favoriteBranchId?: string | null; favoriteTimeSchedule?: string | null },
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      favoriteBranchId?: string | null;
+      favoriteTimeSchedule?: string | null;
+    },
   ) {
     return this.usersService.updatePreferences(userId, data);
   }
@@ -150,11 +174,11 @@ export class AuthService {
 
     const jwtSecret =
       this.configService.get<string>('JWT_SECRET') ?? 'pilates-dev-secret-key-32-chars-long!';
-    const jwtExpiration = (this.configService.get<string>('JWT_EXPIRATION') ?? '15m') as `${number}m` | `${number}d` | `${number}h` | `${number}s`;
+    const jwtExpiration = (this.configService.get<string>('JWT_EXPIRATION') ?? '7d') as `${number}m` | `${number}d` | `${number}h` | `${number}s`;
 
     const refreshSecret =
       this.configService.get<string>('JWT_REFRESH_SECRET') ?? 'pilates-dev-refresh-secret-key-32-chars!';
-    const refreshExpiration = (this.configService.get<string>('JWT_REFRESH_EXPIRATION') ?? '7d') as `${number}m` | `${number}d` | `${number}h` | `${number}s`;
+    const refreshExpiration = (this.configService.get<string>('JWT_REFRESH_EXPIRATION') ?? '30d') as `${number}m` | `${number}d` | `${number}h` | `${number}s`;
 
     const accessSignOptions: JwtSignOptions = {
       secret: jwtSecret,

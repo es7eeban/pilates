@@ -59,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="p-2 -ml-2 rounded-xl text-charcoal hover:text-black hover:bg-sand-100 transition focus:outline-none"
+            className="p-2 -ml-2 rounded-xl text-charcoal hover:text-black hover:bg-sand-100 transition focus:outline-none lg:hidden"
             title="Abrir menú de navegación"
             aria-label="Abrir menú"
           >

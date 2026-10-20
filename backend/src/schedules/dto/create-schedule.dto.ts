@@ -2,12 +2,12 @@ import { IsDateString, IsNotEmpty, IsNumber, IsOptional, IsUUID, Min } from 'cla
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateScheduleDto {
-  @ApiProperty({ description: 'ID del tipo de clase (disciplina)', example: 'a1b2c3d4-0000-0000-0000-000000000000' })
+  @ApiPropertyOptional({ description: 'ID del tipo de clase (opcional en V1, usa la clase base por defecto)', example: 'a1b2c3d4-0000-0000-0000-000000000000' })
+  @IsOptional()
   @IsUUID('4', { message: 'El classTypeId debe ser un UUID válido' })
-  @IsNotEmpty({ message: 'El classTypeId es obligatorio' })
-  classTypeId: string;
+  classTypeId?: string;
 
-  @ApiPropertyOptional({ description: 'ID del instructor asignado', example: 'a1b2c3d4-0000-0000-0000-000000000001' })
+  @ApiPropertyOptional({ description: 'ID del instructor asignado (en V1 se asigna automáticamente al Administrador)', example: 'a1b2c3d4-0000-0000-0000-000000000001' })
   @IsOptional()
   @IsUUID('4', { message: 'El instructorId debe ser un UUID válido' })
   instructorId?: string;

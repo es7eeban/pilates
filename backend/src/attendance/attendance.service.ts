@@ -28,9 +28,12 @@ export class AttendanceService {
   async getInstructorClasses(user: AuthUser, query: QueryAttendanceDto) {
     const where: Prisma.ClassScheduleWhereInput = {};
 
-    // Si es ADMIN y solicita all=true, no se restringe por instructor
-    if (user.role === Role.ADMIN && query.all) {
-      // todas las clases
+    // Si es ADMIN, por defecto ve todas las clases del estudio (a menos que explícitamente filtre query.all === false)
+    if (user.role === Role.ADMIN) {
+      if (query.all === false) {
+        where.instructorId = user.id;
+      }
+      // Sin filtro de instructor para ADMIN por defecto: ve todas las clases
     } else {
       where.instructorId = user.id;
     }
@@ -60,9 +63,18 @@ export class AttendanceService {
           select: { id: true, name: true, email: true, phone: true },
         },
         bookings: {
-          where: { status: BookingStatus.CONFIRMADA },
+          where: {
+            status: {
+              in: [
+                BookingStatus.CONFIRMADA,
+                BookingStatus.FINALIZADA,
+                BookingStatus.PENDIENTE_VALIDACION,
+              ],
+            },
+          },
           select: {
             id: true,
+            status: true,
             attendanceStatus: true,
           },
         },
@@ -71,17 +83,24 @@ export class AttendanceService {
     });
 
     return schedules.map((s) => {
-      const totalEnrolled = s.bookings.length;
-      const attendedCount = s.bookings.filter(
+      const confirmedBookings = s.bookings.filter(
+        (b) => b.status === BookingStatus.CONFIRMADA || b.status === BookingStatus.FINALIZADA,
+      );
+      const pendingValidationCount = s.bookings.filter(
+        (b) => b.status === BookingStatus.PENDIENTE_VALIDACION,
+      ).length;
+
+      const totalEnrolled = confirmedBookings.length;
+      const attendedCount = confirmedBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.ATTENDED,
       ).length;
-      const noShowCount = s.bookings.filter(
+      const noShowCount = confirmedBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.NO_SHOW,
       ).length;
-      const excusedCount = s.bookings.filter(
+      const excusedCount = confirmedBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.EXCUSED,
       ).length;
-      const pendingCount = s.bookings.filter(
+      const pendingCount = confirmedBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.PENDING,
       ).length;
 
@@ -103,6 +122,7 @@ export class AttendanceService {
         stats: {
           capacity: s.capacity,
           enrolled: totalEnrolled,
+          pendingValidation: pendingValidationCount,
           availableSlots: s.availableSlots,
           attended: attendedCount,
           noShow: noShowCount,
@@ -141,6 +161,14 @@ export class AttendanceService {
                 phone: true,
               },
             },
+            payment: {
+              select: {
+                id: true,
+                amount: true,
+                status: true,
+                gatewayProvider: true,
+              },
+            },
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -174,6 +202,10 @@ export class AttendanceService {
       (b) => b.attendanceStatus === AttendanceStatus.PENDING,
     ).length;
 
+    const pendingValidationCount = schedule.bookings.filter(
+      (b) => b.status === BookingStatus.PENDIENTE_VALIDACION,
+    ).length;
+
     return {
       schedule: {
         id: schedule.id,
@@ -188,6 +220,7 @@ export class AttendanceService {
       },
       stats: {
         totalEnrolled: confirmedBookings.length,
+        pendingValidationCount,
         attendedCount,
         noShowCount,
         excusedCount,

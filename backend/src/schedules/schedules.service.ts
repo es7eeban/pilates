@@ -4,15 +4,80 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, ScheduleStatus } from '@prisma/client';
+import { BookingStatus, Prisma, Role, ScheduleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateScheduleDto } from './dto/create-schedule.dto.js';
 import { BulkGenerateSchedulesDto } from './dto/bulk-generate-schedules.dto.js';
 import { QuerySchedulesDto } from './dto/query-schedules.dto.js';
+import { UpdateScheduleDto, CancelScheduleDto } from './dto/update-schedule.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 @Injectable()
 export class SchedulesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
+
+  private async resolveDefaultClassTypeId(classTypeId?: string): Promise<string> {
+    if (classTypeId) return classTypeId;
+    const defaultType = await this.prisma.classType.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!defaultType) {
+      const created = await this.prisma.classType.create({
+        data: {
+          title: 'Sesión de Pilates Reformer',
+          description: 'Sesión guiada de Pilates en estudio.',
+          defaultCapacity: 8,
+          defaultPrice: 15000,
+          durationMinutes: 55,
+          intensityLevel: 'Todos los niveles',
+          isActive: true,
+        },
+      });
+      return created.id;
+    }
+    return defaultType.id;
+  }
+
+  private async resolveDefaultInstructorId(instructorId?: string): Promise<string | undefined> {
+    if (instructorId) return instructorId;
+    // En V1 el Administrador es el instructor por defecto
+    const admin = await this.prisma.user.findFirst({
+      where: { role: Role.ADMIN, isActive: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    return admin?.id;
+  }
+
+  private async resolveNotificationRecipients(
+    scheduleId: string,
+    notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE',
+  ): Promise<string[]> {
+    if (notifyTarget === 'NONE') return [];
+
+    if (notifyTarget === 'ALL_CLIENTS') {
+      const clients = await this.prisma.user.findMany({
+        where: { role: Role.CLIENT, isActive: true },
+        select: { id: true },
+      });
+      return clients.map((c) => c.id);
+    }
+
+    // Por defecto ('ENROLLED'): notificar a los alumnos con reserva activa en esa sesión
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        scheduleId,
+        status: {
+          notIn: [BookingStatus.CANCELADA_CLIENTE, BookingStatus.RECHAZADA_ADMIN],
+        },
+      },
+      select: { userId: true },
+    });
+    return bookings.map((b) => b.userId);
+  }
 
   async findAll(query: QuerySchedulesDto) {
     const where: Prisma.ClassScheduleWhereInput = {};
@@ -128,16 +193,17 @@ export class SchedulesService {
       throw new BadRequestException('La hora de inicio debe ser anterior a la hora de término');
     }
 
-    // Validar tipo de clase
+    const resolvedClassTypeId = await this.resolveDefaultClassTypeId(dto.classTypeId);
     const classType = await this.prisma.classType.findUnique({
-      where: { id: dto.classTypeId },
+      where: { id: resolvedClassTypeId },
     });
 
     if (!classType || !classType.isActive) {
       throw new BadRequestException('El tipo de clase no existe o está inactivo');
     }
 
-    // Validar instructor si fue proporcionado
+    const resolvedInstructorId = await this.resolveDefaultInstructorId(dto.instructorId);
+
     if (dto.instructorId) {
       const instructor = await this.prisma.user.findUnique({
         where: { id: dto.instructorId },
@@ -152,7 +218,6 @@ export class SchedulesService {
         throw new BadRequestException('El usuario seleccionado no tiene facultades de instructor');
       }
 
-      // Validar traslapes de horario para este instructor
       const overlap = await this.prisma.classSchedule.findFirst({
         where: {
           instructorId: dto.instructorId,
@@ -169,7 +234,6 @@ export class SchedulesService {
       }
     }
 
-    // Validar sede si fue proporcionada
     if (dto.branchId) {
       const branch = await this.prisma.branch.findUnique({
         where: { id: dto.branchId },
@@ -184,8 +248,8 @@ export class SchedulesService {
 
     return this.prisma.classSchedule.create({
       data: {
-        classTypeId: dto.classTypeId,
-        instructorId: dto.instructorId,
+        classTypeId: resolvedClassTypeId,
+        instructorId: resolvedInstructorId,
         branchId: dto.branchId,
         startTime: start,
         endTime: end,
@@ -210,8 +274,9 @@ export class SchedulesService {
   }
 
   async bulkGenerate(dto: BulkGenerateSchedulesDto) {
+    const resolvedClassTypeId = await this.resolveDefaultClassTypeId(dto.classTypeId);
     const classType = await this.prisma.classType.findUnique({
-      where: { id: dto.classTypeId },
+      where: { id: resolvedClassTypeId },
     });
 
     if (!classType || !classType.isActive) {
@@ -227,15 +292,7 @@ export class SchedulesService {
       }
     }
 
-    if (dto.instructorId) {
-      const instructor = await this.prisma.user.findUnique({
-        where: { id: dto.instructorId },
-      });
-
-      if (!instructor || !instructor.isActive) {
-        throw new BadRequestException('El instructor no existe o está inactivo');
-      }
-    }
+    const resolvedInstructorId = await this.resolveDefaultInstructorId(dto.instructorId);
 
     const duration = dto.durationMinutes ?? classType.durationMinutes;
     const capacity = dto.capacity ?? classType.defaultCapacity;
@@ -252,8 +309,6 @@ export class SchedulesService {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      // JavaScript getUTCDay: 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-      // Mapeo a ISO (1 = Lunes, ..., 7 = Domingo)
       const jsDay = currentDate.getUTCDay();
       const isoDay = jsDay === 0 ? 7 : jsDay;
 
@@ -268,7 +323,6 @@ export class SchedulesService {
           const startTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`);
           const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
 
-          // Verificar traslape de instructor si aplica
           let skip = false;
           if (dto.instructorId) {
             const overlap = await this.prisma.classSchedule.findFirst({
@@ -289,8 +343,8 @@ export class SchedulesService {
           if (!skip) {
             const schedule = await this.prisma.classSchedule.create({
               data: {
-                classTypeId: dto.classTypeId,
-                instructorId: dto.instructorId,
+                classTypeId: resolvedClassTypeId,
+                instructorId: resolvedInstructorId,
                 branchId: dto.branchId,
                 startTime,
                 endTime,
@@ -315,27 +369,132 @@ export class SchedulesService {
     };
   }
 
-  async cancel(id: string) {
+  /**
+   * Modifica un día de clase puntual (cambio de sede, cambio de horario, aforo o precio)
+   * y envía notificación opcional a los alumnos inscritos o a todos los alumnos activos.
+   */
+  async update(id: string, dto: UpdateScheduleDto) {
+    const existing = await this.findById(id);
+
+    const newStart = dto.startTime ? new Date(dto.startTime) : existing.startTime;
+    const newEnd = dto.endTime ? new Date(dto.endTime) : existing.endTime;
+
+    if (newStart >= newEnd) {
+      throw new BadRequestException('La hora de inicio debe ser anterior a la hora de término');
+    }
+
+    let newBranchName = existing.branch?.name || 'Sede Principal';
+    if (dto.branchId && dto.branchId !== existing.branchId) {
+      const branch = await this.prisma.branch.findUnique({ where: { id: dto.branchId } });
+      if (!branch || !branch.isActive) {
+        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+      }
+      newBranchName = branch.name;
+    }
+
+    // Calcular nuevo availableSlots proporcional si cambia capacity
+    let newAvailableSlots = existing.availableSlots;
+    if (dto.capacity !== undefined && dto.capacity !== existing.capacity) {
+      const occupied = existing.capacity - existing.availableSlots;
+      newAvailableSlots = Math.max(0, dto.capacity - occupied);
+    }
+
+    const updated = await this.prisma.classSchedule.update({
+      where: { id },
+      data: {
+        ...(dto.branchId !== undefined && { branchId: dto.branchId }),
+        ...(dto.startTime !== undefined && { startTime: newStart }),
+        ...(dto.endTime !== undefined && { endTime: newEnd }),
+        ...(dto.capacity !== undefined && { capacity: dto.capacity, availableSlots: newAvailableSlots }),
+        ...(dto.price !== undefined && { price: dto.price }),
+      },
+      include: {
+        classType: true,
+        branch: true,
+        instructor: true,
+      },
+    });
+
+    // Emitir notificación si corresponde
+    try {
+      const targetUserIds = await this.resolveNotificationRecipients(id, dto.notifyTarget ?? 'ENROLLED');
+      if (targetUserIds.length > 0) {
+        await this.notificationsService.notifyScheduleUpdated({
+          scheduleId: id,
+          oldBranchName: existing.branch?.name || 'Sede Principal',
+          newBranchName: updated.branch?.name || newBranchName,
+          oldStartTime: existing.startTime,
+          newStartTime: updated.startTime,
+          newEndTime: updated.endTime,
+          reason: dto.reason,
+          targetUserIds,
+        });
+      }
+    } catch {
+      // No interrumpir actualización si falla notificación
+    }
+
+    return updated;
+  }
+
+  /**
+   * Cancela / elimina un día específico de clase (ej. un viernes que no habrá clases)
+   * y notifica a los alumnos inscritos o a todos los alumnos activos del estudio.
+   */
+  async cancel(id: string, dto?: CancelScheduleDto) {
     const schedule = await this.findById(id);
 
     if (schedule.status === ScheduleStatus.CANCELLED) {
       throw new ConflictException('La sesión ya se encuentra cancelada');
     }
 
-    return this.prisma.classSchedule.update({
-      where: { id },
-      data: { status: ScheduleStatus.CANCELLED },
-      include: {
-        classType: true,
-        instructor: true,
-      },
+    const targetUserIds = await this.resolveNotificationRecipients(id, dto?.notifyTarget ?? 'ENROLLED');
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Cancelar reservas activas asociadas a ese día
+      await tx.booking.updateMany({
+        where: {
+          scheduleId: id,
+          status: {
+            notIn: [BookingStatus.CANCELADA_CLIENTE, BookingStatus.RECHAZADA_ADMIN],
+          },
+        },
+        data: {
+          status: BookingStatus.CANCELADA_CLIENTE,
+          rejectionReason: dto?.reason || 'Sesión suspendida por administración',
+        },
+      });
+
+      return tx.classSchedule.update({
+        where: { id },
+        data: { status: ScheduleStatus.CANCELLED },
+        include: {
+          classType: true,
+          branch: true,
+          instructor: true,
+        },
+      });
     });
+
+    try {
+      if (targetUserIds.length > 0) {
+        await this.notificationsService.notifyScheduleCancelled({
+          scheduleId: id,
+          branchName: schedule.branch?.name || 'Sede Principal',
+          startTime: schedule.startTime,
+          reason: dto?.reason,
+          targetUserIds,
+        });
+      }
+    } catch {
+      // No frenar cancelación si falla notificación
+    }
+
+    return updated;
   }
 
   /**
-   * Bloqueo pesimista para reserva concurrente de cupos en PostgreSQL:
-   * Ejecuta SELECT ... FOR UPDATE dentro de la transacción activa para garantizar
-   * consistencia estricta de aforo en accesos simultáneos.
+   * Bloqueo pesimista para reserva concurrente de cupos en PostgreSQL
    */
   async reserveSlotWithPessimisticLock(
     scheduleId: string,
@@ -343,7 +502,6 @@ export class SchedulesService {
   ) {
     const runner = txClient ?? this.prisma;
 
-    // Ejecuta bloqueo exclusivo de fila FOR UPDATE en PostgreSQL
     const rows = await runner.$queryRaw<
       Array<{ id: string; available_slots: number; capacity: number; status: ScheduleStatus }>
     >`

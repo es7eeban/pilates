@@ -56,6 +56,14 @@ export class BookingsController {
     return this.bookingsService.getPendingVouchers();
   }
 
+  @Get('admin/all-bookings')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Listar todas las reservas del estudio con alumnos y asistencia (Solo Admin)' })
+  @ApiResponse({ status: 200, description: 'Listado completo de reservas' })
+  async getAllBookings() {
+    return this.bookingsService.getAllBookings();
+  }
+
   @Patch('admin/:id/approve-voucher')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Aprobar transferencia bancaria y confirmar reserva (Solo Admin)' })

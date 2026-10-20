@@ -89,7 +89,7 @@ describe('Transactional Notifications Flow (e2e)', () => {
     expect(Array.isArray(res.body.notifications)).toBe(true);
   });
 
-  it('3. Al crear una reserva con TRANSFER, se debe generar automáticamente una notificación BOOKING_CREATED', async () => {
+  it('3. Al crear una reserva, subir voucher y aprobar pago, las notificaciones se asocian estrictamente al destinatario correcto', async () => {
     // Limpiar reservas previas del alumno para esta sesión en caso de ejecuciones anteriores
     await prisma.booking.deleteMany({
       where: { userId: clientId, scheduleId },
@@ -120,8 +120,6 @@ describe('Transactional Notifications Flow (e2e)', () => {
     expect(createdNotif).toBeDefined();
     expect(createdNotif.title).toContain(bookingCode);
     expect(createdNotif.read).toBe(false);
-    expect(createdNotif.metadata).toHaveProperty('email');
-    expect(createdNotif.metadata).toHaveProperty('whatsapp');
 
     // 4. Marcar la notificación como leída
     const markReadRes = await request(app.getHttpServer())
@@ -131,7 +129,7 @@ describe('Transactional Notifications Flow (e2e)', () => {
 
     expect(markReadRes.body.read).toBe(true);
 
-    // 5. Al subir un comprobante, se genera notificación VOUCHER_UPLOADED
+    // 5. Al subir un comprobante, la notificación VOUCHER_UPLOADED SOLO le llega al ADMIN (no al alumno)
     await request(app.getHttpServer())
       .patch(`/api/v1/bookings/${bookingId}/upload-voucher`)
       .set('Authorization', `Bearer ${clientToken}`)
@@ -140,17 +138,30 @@ describe('Transactional Notifications Flow (e2e)', () => {
       })
       .expect(200);
 
-    const notifAfterVoucher = await request(app.getHttpServer())
+    const notifAfterVoucherStudent = await request(app.getHttpServer())
       .get('/api/v1/notifications/my')
       .set('Authorization', `Bearer ${clientToken}`)
       .expect(200);
 
-    const voucherNotif = notifAfterVoucher.body.notifications.find(
+    const studentVoucherNotif = notifAfterVoucherStudent.body.notifications.find(
       (n: any) => n.metadata?.bookingCode === bookingCode && n.type === 'VOUCHER_UPLOADED',
     );
-    expect(voucherNotif).toBeDefined();
+    expect(studentVoucherNotif).toBeUndefined();
 
-    // 6. El administrador aprueba el voucher -> Se genera notificación PAYMENT_APPROVED
+    const adminNotifAfterVoucher = await request(app.getHttpServer())
+      .get('/api/v1/notifications/my')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const adminVoucherNotif = adminNotifAfterVoucher.body.notifications.find(
+      (n: any) =>
+        n.type === 'VOUCHER_UPLOADED' &&
+        (n.title?.includes(bookingCode) || n.message?.includes(bookingCode)),
+    );
+    expect(adminVoucherNotif).toBeDefined();
+    expect(adminVoucherNotif.read).toBe(false);
+
+    // 6. El administrador aprueba el voucher -> Se genera notificación PAYMENT_APPROVED para el alumno y se resuelve alerta del admin
     await request(app.getHttpServer())
       .patch(`/api/v1/bookings/admin/${bookingId}/approve-voucher`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -166,6 +177,22 @@ describe('Transactional Notifications Flow (e2e)', () => {
     );
     expect(approvedNotif).toBeDefined();
     expect(approvedNotif.title).toContain('Pago aprobado');
+
+    // Verificar que las alertas VOUCHER_UPLOADED enviadas al admin para este bookingCode quedaron resueltas (read: true)
+    const adminNotifRes = await request(app.getHttpServer())
+      .get('/api/v1/notifications/my')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const adminVoucherAlerts = adminNotifRes.body.notifications.filter(
+      (n: any) =>
+        n.type === 'VOUCHER_UPLOADED' &&
+        (n.title?.includes(bookingCode) || n.message?.includes(bookingCode)),
+    );
+    expect(adminVoucherAlerts.length).toBeGreaterThan(0);
+    adminVoucherAlerts.forEach((alert: any) => {
+      expect(alert.read).toBe(true);
+    });
 
     // 7. Marcar todas las notificaciones como leídas
     await request(app.getHttpServer())

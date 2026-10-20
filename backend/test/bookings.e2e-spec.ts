@@ -249,5 +249,29 @@ describe('Branches & Bookings Flow (e2e)', () => {
       expect(myBooking).toBeDefined();
       expect(myBooking.status).toBe('CONFIRMADA');
     });
+
+    it('GET /api/v1/bookings/admin/all-bookings - debe denegar acceso a clientes (403)', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/bookings/admin/all-bookings')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .expect(403);
+    });
+
+    it('GET /api/v1/bookings/admin/all-bookings - debe listar todas las reservas del estudio con alumno, sede y pago para el Admin', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/bookings/admin/all-bookings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      const studioBooking = res.body.find((b: any) => b.id === bookingId);
+      expect(studioBooking).toBeDefined();
+      expect(studioBooking.status).toBe('CONFIRMADA');
+      expect(studioBooking.user).toBeDefined();
+      expect(studioBooking.user.email).toBe('alumno.demo@pilates.cl');
+      expect(studioBooking.schedule).toBeDefined();
+      expect(studioBooking.schedule.classType).toBeDefined();
+      expect(studioBooking.payment).toBeDefined();
+    });
   });
 });

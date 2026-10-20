@@ -1,4 +1,4 @@
-import type { AuthResponse, LoginPayload, RegisterPayload, User } from '../types/auth';
+import type { AuthResponse, AuthTokens, LoginPayload, RegisterPayload, User } from '../types/auth';
 
 function getApiBaseUrl(): string {
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
@@ -27,18 +27,115 @@ export function isPdfDocument(url?: string | null): boolean {
   return clean.endsWith('.pdf');
 }
 
+const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'pilates_access_token',
+  REFRESH_TOKEN: 'pilates_refresh_token',
+  USER_PROFILE: 'pilates_user_profile',
+};
+
 export const tokenStorage = {
-  getAccessToken: () => localStorage.getItem('pilates_access_token'),
-  getRefreshToken: () => localStorage.getItem('pilates_refresh_token'),
+  getAccessToken: () => localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
+  getRefreshToken: () => localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN),
+  getCachedUser: (): User | null => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
+      return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+      return null;
+    }
+  },
+  setCachedUser: (user: User | null) => {
+    if (!user) {
+      localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(user));
+    }
+  },
   setTokens: (accessToken: string, refreshToken: string) => {
-    localStorage.setItem('pilates_access_token', accessToken);
-    localStorage.setItem('pilates_refresh_token', refreshToken);
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
   },
   clear: () => {
-    localStorage.removeItem('pilates_access_token');
-    localStorage.removeItem('pilates_refresh_token');
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
   },
 };
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function tryRefreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!refreshToken) return null;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        tokenStorage.clear();
+        window.dispatchEvent(new CustomEvent('pilates:session-expired'));
+        return null;
+      }
+
+      const tokens = (await res.json()) as AuthTokens;
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        tokenStorage.setTokens(tokens.accessToken, tokens.refreshToken);
+        return tokens.accessToken;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+/**
+ * Wrapper HTTP con renovación automática de JWT ante respuestas 401 Unauthorized.
+ * Evita que los usuarios vean modales con "Unauthorized" o deban volver a iniciar sesión.
+ */
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  let token = tokenStorage.getAccessToken();
+  if (!token) {
+    token = await tryRefreshAccessToken();
+  }
+  if (!token) {
+    throw new Error('No hay sesión activa');
+  }
+
+  const buildHeaders = (bearer: string) => {
+    const headers = new Headers(options.headers || {});
+    headers.set('Authorization', `Bearer ${bearer}`);
+    return headers;
+  };
+
+  let res = await fetch(url, {
+    ...options,
+    headers: buildHeaders(token),
+  });
+
+  if (res.status === 401) {
+    const newToken = await tryRefreshAccessToken();
+    if (newToken) {
+      res = await fetch(url, {
+        ...options,
+        headers: buildHeaders(newToken),
+      });
+    }
+  }
+
+  return res;
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));
@@ -71,26 +168,26 @@ export const authApi = {
   },
 
   async getMe(): Promise<User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/auth/me`);
     return handleResponse<User>(res);
   },
 
   async updatePreferences(payload: import('../types/auth').UpdatePreferencesPayload): Promise<User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/auth/preferences`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/auth/preferences`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<User>(res);
+  },
+
+  async updateProfile(payload: import('../types/auth').UpdatePreferencesPayload): Promise<User> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -110,14 +207,10 @@ export const branchesApi = {
   },
 
   async create(payload: import('../types/admin').CreateBranchPayload): Promise<import('../types/schedule').Branch> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/branches`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/branches`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -125,14 +218,10 @@ export const branchesApi = {
   },
 
   async update(id: string, payload: import('../types/admin').UpdateBranchPayload): Promise<import('../types/schedule').Branch> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/branches/${id}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/branches/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -140,14 +229,8 @@ export const branchesApi = {
   },
 
   async remove(id: string): Promise<import('../types/schedule').Branch> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/branches/${id}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/branches/${id}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse(res);
   },
@@ -155,20 +238,13 @@ export const branchesApi = {
 
 export const usersApi = {
   async getAll(params?: import('../types/admin').QueryUsersParams): Promise<import('../types/auth').User[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
     const query = new URLSearchParams();
     if (params?.search) query.append('search', params.search);
     if (params?.role) query.append('role', params.role);
     if (params?.isActive !== undefined) query.append('isActive', String(params.isActive));
 
     const qs = query.toString() ? `?${query.toString()}` : '';
-    const res = await fetch(`${API_BASE_URL}/users${qs}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/users${qs}`);
     return handleResponse(res);
   },
 
@@ -178,26 +254,15 @@ export const usersApi = {
   },
 
   async getById(id: string): Promise<import('../types/auth').User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/users/${id}`);
     return handleResponse(res);
   },
 
   async create(payload: import('../types/admin').AdminCreateUserPayload): Promise<import('../types/auth').User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/users`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -205,14 +270,10 @@ export const usersApi = {
   },
 
   async update(id: string, payload: import('../types/admin').AdminUpdateUserPayload): Promise<import('../types/auth').User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/users/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -220,14 +281,8 @@ export const usersApi = {
   },
 
   async toggleActive(id: string): Promise<import('../types/auth').User> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/users/${id}/toggle-active`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/users/${id}/toggle-active`, {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse(res);
   },
@@ -240,14 +295,10 @@ export const classTypesApi = {
   },
 
   async create(payload: import('../types/admin').CreateClassTypePayload): Promise<import('../types/schedule').ClassType> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/class-types`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/class-types`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -255,14 +306,10 @@ export const classTypesApi = {
   },
 
   async update(id: string, payload: import('../types/admin').UpdateClassTypePayload): Promise<import('../types/schedule').ClassType> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/class-types/${id}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/class-types/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -270,14 +317,8 @@ export const classTypesApi = {
   },
 
   async remove(id: string): Promise<import('../types/schedule').ClassType> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/class-types/${id}`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/class-types/${id}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse(res);
   },
@@ -305,14 +346,10 @@ export const schedulesApi = {
   },
 
   async create(payload: import('../types/admin').CreateSchedulePayload): Promise<import('../types/schedule').ClassSchedule> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/schedules`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -320,29 +357,34 @@ export const schedulesApi = {
   },
 
   async bulkGenerate(payload: import('../types/admin').BulkGenerateSchedulesPayload): Promise<{ count: number; schedules: import('../types/schedule').ClassSchedule[] }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/schedules/bulk-generate`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/bulk-generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
     return handleResponse(res);
   },
 
-  async cancel(id: string): Promise<import('../types/schedule').ClassSchedule> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/schedules/${id}/cancel`, {
+  async update(id: string, payload: import('../types/admin').UpdateSchedulePayload): Promise<import('../types/schedule').ClassSchedule> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/${id}`, {
       method: 'PATCH',
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async cancel(id: string, payload?: import('../types/admin').CancelSchedulePayload): Promise<import('../types/schedule').ClassSchedule> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/${id}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload || {}),
     });
     return handleResponse(res);
   },
@@ -350,14 +392,10 @@ export const schedulesApi = {
 
 export const bookingsApi = {
   async create(payload: import('../types/schedule').CreateBookingPayload): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('Debes iniciar sesión para reservar');
-
-    const res = await fetch(`${API_BASE_URL}/bookings`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -365,39 +403,22 @@ export const bookingsApi = {
   },
 
   async getMyBookings(): Promise<import('../types/schedule').Booking[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/bookings/my-bookings`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/my-bookings`);
     return handleResponse<import('../types/schedule').Booking[]>(res);
   },
 
   async cancel(id: string): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/${id}/cancel`, {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse<import('../types/schedule').Booking>(res);
   },
 
   async uploadVoucher(id: string, voucherUrl: string): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/upload-voucher`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/${id}/upload-voucher`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ voucherUrl }),
     });
@@ -405,74 +426,49 @@ export const bookingsApi = {
   },
 
   async uploadVoucherDirect(file: File): Promise<{ url: string; filename: string; originalName: string; size: number; mimetype: string }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(`${API_BASE_URL}/bookings/upload-voucher`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/upload-voucher`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
     return handleResponse<{ url: string; filename: string; originalName: string; size: number; mimetype: string }>(res);
   },
 
   async uploadVoucherFile(id: string, file: File): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(`${API_BASE_URL}/bookings/${id}/upload-voucher-file`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/${id}/upload-voucher-file`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
     return handleResponse<import('../types/schedule').Booking>(res);
   },
 
-  // Endpoints administrativos
   async getPendingVouchers(): Promise<import('../types/schedule').Booking[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/admin/pending-vouchers`);
+    return handleResponse<import('../types/schedule').Booking[]>(res);
+  },
 
-    const res = await fetch(`${API_BASE_URL}/bookings/admin/pending-vouchers`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  async getAllBookings(): Promise<import('../types/schedule').Booking[]> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/admin/all-bookings`);
     return handleResponse<import('../types/schedule').Booking[]>(res);
   },
 
   async approveVoucher(id: string): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/bookings/admin/${id}/approve-voucher`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/admin/${id}/approve-voucher`, {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse<import('../types/schedule').Booking>(res);
   },
 
   async rejectVoucher(id: string, reason: string): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/bookings/admin/${id}/reject-voucher`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/bookings/admin/${id}/reject-voucher`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ reason }),
     });
@@ -482,9 +478,6 @@ export const bookingsApi = {
 
 export const attendanceApi = {
   async getMyClasses(params?: import('../types/attendance').QueryAttendanceParams): Promise<import('../types/attendance').InstructorClassSchedule[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
     const query = new URLSearchParams();
     if (params?.date) query.append('date', params.date);
     if (params?.branchId) query.append('branchId', params.branchId);
@@ -493,23 +486,12 @@ export const attendanceApi = {
 
     const queryString = query.toString();
     const url = `${API_BASE_URL}/attendance/my-classes${queryString ? `?${queryString}` : ''}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(url);
     return handleResponse<import('../types/attendance').InstructorClassSchedule[]>(res);
   },
 
   async getClassRoster(scheduleId: string): Promise<import('../types/attendance').ClassRosterResponse> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/roster`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/attendance/classes/${scheduleId}/roster`);
     return handleResponse<import('../types/attendance').ClassRosterResponse>(res);
   },
 
@@ -517,14 +499,10 @@ export const attendanceApi = {
     bookingId: string,
     payload: import('../types/attendance').UpdateAttendancePayload,
   ): Promise<import('../types/schedule').Booking> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/attendance/bookings/${bookingId}/status`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/attendance/bookings/${bookingId}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -535,14 +513,10 @@ export const attendanceApi = {
     scheduleId: string,
     attendees: import('../types/attendance').BulkAttendanceItem[],
   ): Promise<import('../types/attendance').ClassRosterResponse> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/bulk`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/attendance/classes/${scheduleId}/bulk`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ attendees }),
     });
@@ -553,14 +527,10 @@ export const attendanceApi = {
     scheduleId: string,
     status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
   ): Promise<import('../types/schedule').ClassSchedule> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/attendance/classes/${scheduleId}/status`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/attendance/classes/${scheduleId}/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
     });
@@ -570,66 +540,34 @@ export const attendanceApi = {
 
 export const notificationsApi = {
   async getMy(): Promise<import('../types/notification').MyNotificationsResponse> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/notifications/my`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/notifications/my`);
     return handleResponse<import('../types/notification').MyNotificationsResponse>(res);
   },
 
   async markAsRead(id: string): Promise<import('../types/notification').AppNotification> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/notifications/${id}/read`, {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse<import('../types/notification').AppNotification>(res);
   },
 
   async markAllAsRead(): Promise<{ success: boolean }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/notifications/mark-all-read`, {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse<{ success: boolean }>(res);
   },
 
   async getAdminLogs(limit = 100): Promise<import('../types/notification').AppNotification[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/notifications/admin/logs?limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/notifications/admin/logs?limit=${limit}`);
     return handleResponse<import('../types/notification').AppNotification[]>(res);
   },
 };
 
 export const waitlistApi = {
   async join(scheduleId: string): Promise<{ message: string; entry: import('../types/waitlist').WaitlistEntry; waitlistCount: number; waitlistMax: number }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/join`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/join`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse(res);
   },
@@ -638,14 +576,10 @@ export const waitlistApi = {
     scheduleId: string,
     payload: { paymentMethod: import('../types/schedule').PaymentMethod; voucherUrl?: string },
   ): Promise<{ message: string; booking: import('../types/schedule').Booking }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/accept`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/accept`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -653,39 +587,19 @@ export const waitlistApi = {
   },
 
   async decline(scheduleId: string): Promise<{ success: boolean; message: string }> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/decline`, {
+    const res = await fetchWithAuth(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/decline`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     return handleResponse(res);
   },
 
   async getMyStatus(scheduleId: string): Promise<import('../types/waitlist').WaitlistStatusResponse> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/status`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/waitlist/schedules/${scheduleId}/status`);
     return handleResponse(res);
   },
 
   async getMyEntries(): Promise<import('../types/waitlist').WaitlistEntry[]> {
-    const token = tokenStorage.getAccessToken();
-    if (!token) throw new Error('No hay sesión activa');
-
-    const res = await fetch(`${API_BASE_URL}/waitlist/my-entries`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const res = await fetchWithAuth(`${API_BASE_URL}/waitlist/my-entries`);
     return handleResponse(res);
   },
 
@@ -694,5 +608,3 @@ export const waitlistApi = {
     return handleResponse(res);
   },
 };
-
-

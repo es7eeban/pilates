@@ -7,10 +7,18 @@ import { useAuth } from '../context/AuthContext';
 interface AttendanceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialScheduleId?: string | null;
+  refreshKey?: number;
 }
 
-export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose }) => {
+export const AttendanceModal: React.FC<AttendanceModalProps> = ({
+  isOpen,
+  onClose,
+  initialScheduleId,
+  refreshKey,
+}) => {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   // Estados generales
   const [classes, setClasses] = useState<InstructorClassSchedule[]>([]);
@@ -21,7 +29,8 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
   // Filtros
   const [selectedBranchId, setSelectedBranchId] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [viewAllInstructors, setViewAllInstructors] = useState<boolean>(false);
+  // Por defecto, los administradores ven todas las clases del estudio
+  const [viewAllInstructors, setViewAllInstructors] = useState<boolean>(true);
 
   // Vista activa: 'CLASSES' | 'ROSTER'
   const [activeView, setActiveView] = useState<'CLASSES' | 'ROSTER'>('CLASSES');
@@ -34,14 +43,19 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const isAdmin = user?.role === 'ADMIN';
-
   // Cargar sedes
   useEffect(() => {
     if (isOpen) {
       branchesApi.getAll().then(setBranches).catch(console.error);
     }
   }, [isOpen]);
+
+  // Si el rol es admin, asegurar vista global por defecto
+  useEffect(() => {
+    if (isAdmin) {
+      setViewAllInstructors(true);
+    }
+  }, [isAdmin]);
 
   // Cargar lista de clases
   const loadClasses = useCallback(async () => {
@@ -51,7 +65,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
       const data = await attendanceApi.getMyClasses({
         branchId: selectedBranchId !== 'ALL' ? selectedBranchId : undefined,
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
-        all: isAdmin && viewAllInstructors,
+        all: isAdmin ? viewAllInstructors : false,
       });
       setClasses(data);
     } catch (err: any) {
@@ -61,14 +75,8 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
     }
   }, [selectedBranchId, statusFilter, viewAllInstructors, isAdmin]);
 
-  useEffect(() => {
-    if (isOpen && activeView === 'CLASSES') {
-      loadClasses();
-    }
-  }, [isOpen, activeView, loadClasses]);
-
   // Cargar nómina de una clase
-  const handleOpenRoster = async (scheduleId: string) => {
+  const handleOpenRoster = useCallback(async (scheduleId: string) => {
     try {
       setSelectedScheduleId(scheduleId);
       setActiveView('ROSTER');
@@ -86,6 +94,28 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
       setError(err.message || 'Error al obtener nómina de la clase');
     } finally {
       setRosterLoading(false);
+    }
+  }, []);
+
+  // Manejar apertura inicial o cambios de refreshKey / initialScheduleId
+  useEffect(() => {
+    if (isOpen) {
+      if (initialScheduleId) {
+        handleOpenRoster(initialScheduleId);
+      } else if (activeView === 'CLASSES') {
+        loadClasses();
+      } else if (activeView === 'ROSTER' && selectedScheduleId) {
+        handleOpenRoster(selectedScheduleId);
+      }
+    }
+  }, [isOpen, initialScheduleId, refreshKey, loadClasses, handleOpenRoster]);
+
+  // Refrescar manualmente la vista activa
+  const handleRefreshCurrentView = async () => {
+    if (activeView === 'CLASSES') {
+      await loadClasses();
+    } else if (activeView === 'ROSTER' && selectedScheduleId) {
+      await handleOpenRoster(selectedScheduleId);
     }
   };
 
@@ -237,12 +267,23 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-white p-2 rounded-lg hover:bg-stone-800 transition"
-          >
-            ✕
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleRefreshCurrentView}
+              disabled={loading || rosterLoading}
+              className="text-stone-300 hover:text-white px-3 py-1.5 rounded-xl hover:bg-stone-800 transition flex items-center gap-1.5 text-xs font-semibold bg-stone-800/80 border border-stone-700 shadow-sm"
+              title="Actualizar listado de clases y nómina"
+            >
+              <span className={`text-xs ${loading || rosterLoading ? 'animate-spin' : ''}`}>🔄</span>
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-stone-400 hover:text-white p-2 rounded-lg hover:bg-stone-800 transition"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Cuerpo del Modal */}
@@ -298,24 +339,36 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                   </div>
                 </div>
 
-                {/* Filtro Admin: Ver todas las clases */}
-                {isAdmin && (
-                  <div className="flex items-center space-x-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
-                    <input
-                      type="checkbox"
-                      id="viewAllToggle"
-                      checked={viewAllInstructors}
-                      onChange={(e) => setViewAllInstructors(e.target.checked)}
-                      className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                    />
-                    <label
-                      htmlFor="viewAllToggle"
-                      className="text-xs font-medium text-stone-700 cursor-pointer select-none"
-                    >
-                      👑 Modo Admin (Ver todas las sedes y profesores)
-                    </label>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Filtro Admin: Ver todas las clases */}
+                  {isAdmin && (
+                    <div className="flex items-center space-x-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
+                      <input
+                        type="checkbox"
+                        id="viewAllToggle"
+                        checked={viewAllInstructors}
+                        onChange={(e) => setViewAllInstructors(e.target.checked)}
+                        className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                      />
+                      <label
+                        htmlFor="viewAllToggle"
+                        className="text-xs font-medium text-stone-700 cursor-pointer select-none"
+                      >
+                        👑 Modo Admin (Ver todas las clases)
+                      </label>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={loadClasses}
+                    disabled={loading}
+                    className="p-2 text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-xl transition text-xs flex items-center gap-1 font-semibold"
+                    title="Recargar clases"
+                  >
+                    <span className={loading ? 'animate-spin' : ''}>🔄</span>
+                    <span className="hidden sm:inline">Refrescar</span>
+                  </button>
+                </div>
               </div>
 
               {/* Lista de Tarjetas de Clases */}
@@ -435,6 +488,12 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                               <span>✅ Asistieron: <strong className="text-emerald-700">{attended}</strong></span>
                               <span>⏳ Pendientes: <strong className="text-amber-600">{enrolled - attended}</strong></span>
                             </div>
+                            {cls.stats?.pendingValidation && cls.stats.pendingValidation > 0 ? (
+                              <div className="mt-2 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center justify-between">
+                                <span>⚠️ Comprobantes por validar:</span>
+                                <strong>{cls.stats.pendingValidation} alumno(s)</strong>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
 
@@ -479,16 +538,30 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
             <div className="space-y-6">
               {/* Encabezado Superior de Navegación de Nómina */}
               <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-                <button
-                  onClick={() => {
-                    setActiveView('CLASSES');
-                    loadClasses();
-                  }}
-                  className="inline-flex items-center space-x-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
-                >
-                  <span>←</span>
-                  <span>Volver a mis clases</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveView('CLASSES');
+                      loadClasses();
+                    }}
+                    className="inline-flex items-center space-x-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
+                  >
+                    <span>←</span>
+                    <span>Volver a mis clases</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (selectedScheduleId) handleOpenRoster(selectedScheduleId);
+                    }}
+                    disabled={rosterLoading}
+                    className="inline-flex items-center space-x-1 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
+                    title="Recargar nómina de alumnos"
+                  >
+                    <span className={rosterLoading ? 'animate-spin' : ''}>🔄</span>
+                    <span className="hidden sm:inline">Refrescar</span>
+                  </button>
+                </div>
 
                 {rosterData && (
                   <div className="flex items-center gap-2">
@@ -664,13 +737,28 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClos
                                   {booking.user?.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <h4 className="text-sm font-serif font-medium text-stone-900">
                                       {booking.user?.name}
                                     </h4>
-                                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600">
+                                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-semibold">
                                       {booking.bookingCode}
                                     </span>
+                                    {booking.status === 'PENDIENTE_VALIDACION' && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                        <span>⚠️</span> Por Validar
+                                      </span>
+                                    )}
+                                    {booking.status === 'CONFIRMADA' && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        Confirmada
+                                      </span>
+                                    )}
+                                    {booking.status === 'FINALIZADA' && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                                        Finalizada
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="flex items-center space-x-3 text-xs text-stone-500 mt-0.5">
                                     <span>✉️ {booking.user?.email}</span>
