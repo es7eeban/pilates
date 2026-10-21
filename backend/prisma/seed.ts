@@ -56,6 +56,7 @@ async function main() {
   const admin = await prisma.user.upsert({
     where: { email: 'admin@pilates.cl' },
     update: {
+      isInstructor: true,
       favoriteBranchId: sedeProvidencia.id,
     },
     create: {
@@ -76,6 +77,8 @@ async function main() {
   const instructor = await prisma.user.upsert({
     where: { email: 'valeria.instructor@pilates.cl' },
     update: {
+      role: Role.INSTRUCTOR,
+      isInstructor: true,
       favoriteBranchId: sedeLasCondes.id,
     },
     create: {
