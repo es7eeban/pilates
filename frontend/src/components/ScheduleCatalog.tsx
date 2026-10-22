@@ -9,6 +9,7 @@ import {
   Users,
   X,
   Settings,
+  ClipboardList,
 } from 'lucide-react';
 import type { ClassSchedule, Branch } from '../types/schedule';
 import { schedulesApi, branchesApi } from '../services/api';
@@ -19,14 +20,18 @@ interface ScheduleCatalogProps {
   onRequestLogin: () => void;
   onSelectSchedule: (schedule: ClassSchedule) => void;
   onOpenAccount?: () => void;
+  onManageSchedule?: (schedule: ClassSchedule) => void;
 }
 
 export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
   onRequestLogin,
   onSelectSchedule,
   onOpenAccount,
+  onManageSchedule,
 }) => {
   const { user, isAuthenticated } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
 
@@ -91,22 +96,19 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
     return baseFilteredSchedules.filter((s) => s.branchId === selectedBranchId);
   }, [baseFilteredSchedules, selectedBranchId]);
 
-  // Separación para el Alumno con Sede Favorita:
-  // 1) Próximas sesiones en su Sede Favorita
-  // 2) Próximas sesiones generales (para ir otro día a otra sede)
-  const favoriteBranchId = user?.favoriteBranchId || null;
+  // Sede Favorita SOLO para perfil ALUMNO (CLIENT) — El Admin no tiene vista de Sede Favorita
+  const favoriteBranchId = !isAdmin ? user?.favoriteBranchId || null : null;
   const favoriteBranchObj = useMemo(() => {
-    if (!favoriteBranchId) return null;
+    if (!favoriteBranchId || isAdmin) return null;
     return user?.favoriteBranch || branches.find((b) => b.id === favoriteBranchId) || null;
-  }, [favoriteBranchId, user?.favoriteBranch, branches]);
+  }, [favoriteBranchId, isAdmin, user?.favoriteBranch, branches]);
 
   const favoriteBranchSchedules = useMemo(() => {
-    if (!favoriteBranchId) return [];
+    if (!favoriteBranchId || isAdmin) return [];
     return baseFilteredSchedules.filter((s) => s.branchId === favoriteBranchId);
-  }, [baseFilteredSchedules, favoriteBranchId]);
+  }, [baseFilteredSchedules, favoriteBranchId, isAdmin]);
 
   const generalSchedules = useMemo(() => {
-    // Si el usuario filtró explícitamente una sede en el selector, mostrar esa sede
     if (selectedBranchId !== 'all') {
       return filteredSchedules;
     }
@@ -160,6 +162,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
   const renderScheduleCard = (schedule: ClassSchedule, highlightFavorite = false) => {
     const isFull = schedule.availableSlots <= 0;
     const isLow = schedule.availableSlots > 0 && schedule.availableSlots <= 2;
+    const enrolledCount = Math.max(0, schedule.capacity - schedule.availableSlots);
 
     return (
       <div
@@ -188,7 +191,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
 
             {isFull ? (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                <Users className="w-3 h-3" /> Agotado · Sobrecupo
+                <Users className="w-3 h-3" /> {isAdmin ? `Completo (${schedule.capacity}/${schedule.capacity})` : 'Agotado · Sobrecupo'}
               </span>
             ) : isLow ? (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse">
@@ -196,7 +199,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
               </span>
             ) : (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {schedule.availableSlots} de {schedule.capacity} cupos
+                {schedule.availableSlots} de {schedule.capacity} cupos libres
               </span>
             )}
           </div>
@@ -234,13 +237,31 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
           </div>
         </div>
 
-        {/* Acción de Reserva */}
+        {/* Pie de tarjeta: Acción para Alumno vs Indicador de Ocupación para Admin */}
         <div className="px-5 py-3.5 bg-sand-50/60 border-t border-sand-100 flex items-center justify-between">
           <div className="font-bold text-base text-sage-900 font-mono">
             {formatPrice(schedule.price)}
           </div>
 
-          {isFull ? (
+          {isAdmin ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-50 text-[#3a1b38] border border-purple-200 flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {enrolledCount} / {schedule.capacity} agendados
+              </span>
+              {onManageSchedule && (
+                <button
+                  type="button"
+                  onClick={() => onManageSchedule(schedule)}
+                  className="px-3 py-1.5 bg-[#3a1b38] hover:bg-[#4f244c] text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1"
+                  title="Ver nómina de alumnos de esta sesión"
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  <span>Ver Nómina</span>
+                </button>
+              )}
+            </div>
+          ) : isFull ? (
             !isAuthenticated ? (
               <button
                 onClick={onRequestLogin}
@@ -284,9 +305,13 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
       <div className="bg-white p-5 rounded-2xl border border-sand-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-sand-100">
           <div>
-            <h2 className="text-lg font-bold text-sage-900">Agenda de Clases en Vivo</h2>
+            <h2 className="text-lg font-bold text-sage-900">
+              {isAdmin ? 'Monitoreo de Agenda de Clases en Vivo' : 'Agenda de Clases en Vivo'}
+            </h2>
             <p className="text-xs text-charcoal-muted">
-              Filtra las sesiones disponibles por sede, jornada horaria (AM / PM) o elige un día en el calendario
+              {isAdmin
+                ? 'Consulta el estado de ocupación de las sesiones agendadas por sede, horario (AM / PM) o día'
+                : 'Filtra las sesiones disponibles por sede, jornada horaria (AM / PM) o elige un día en el calendario'}
             </p>
           </div>
 
@@ -313,7 +338,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 1. Filtro por Sede (alimentado desde Base de Datos) */}
+          {/* 1. Filtro por Sede */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-charcoal-muted mb-1.5 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#3a1b38]" />
@@ -406,7 +431,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
             <span>Mostrar únicamente sesiones con cupos disponibles</span>
           </label>
 
-          {user?.role === 'CLIENT' && onOpenAccount && (
+          {!isAdmin && user?.role === 'CLIENT' && onOpenAccount && (
             <button
               type="button"
               onClick={onOpenAccount}
@@ -439,9 +464,9 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
       ) : (
         <>
           {/* ========================================================================= */}
-          {/* APARTADO 1: PRÓXIMAS SESIONES DE LA SEDE FAVORITA (SI TIENE CONFIGURADA) */}
+          {/* APARTADO 1: PRÓXIMAS SESIONES DE LA SEDE FAVORITA (SOLO ROL ALUMNO)       */}
           {/* ========================================================================= */}
-          {favoriteBranchObj && (
+          {!isAdmin && favoriteBranchObj && (
             <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-50/70 via-white to-rose-50/40 border border-purple-200/80 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
@@ -496,7 +521,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
                 <div className="flex items-center gap-1.5 text-sage-800 text-xs font-bold uppercase tracking-wider mb-0.5">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>
-                    {favoriteBranchObj
+                    {!isAdmin && favoriteBranchObj
                       ? 'Agenda General Multi-Sede · Para asistir otro día u otra sucursal'
                       : 'Agenda General de Sesiones'}
                   </span>
@@ -509,7 +534,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
               </div>
               <span className="text-xs font-semibold text-charcoal-muted">
                 Mostrando {generalSchedules.length}{' '}
-                {generalSchedules.length === 1 ? 'sesión disponible' : 'sesiones disponibles'}
+                {generalSchedules.length === 1 ? 'sesión programada' : 'sesiones programadas'}
               </span>
             </div>
 
@@ -535,7 +560,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {generalSchedules.map((sched) =>
-                  renderScheduleCard(sched, !!favoriteBranchId && sched.branchId === favoriteBranchId),
+                  renderScheduleCard(sched, !isAdmin && !!favoriteBranchId && sched.branchId === favoriteBranchId),
                 )}
               </div>
             )}
@@ -543,7 +568,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
         </>
       )}
 
-      {/* Modal de Lista de Espera / Sobrecupo */}
+      {/* Modal de Lista de Espera / Sobrecupo (solo para alumnos) */}
       <WaitlistJoinModal
         schedule={waitlistModalSchedule}
         isOpen={!!waitlistModalSchedule}

@@ -20,6 +20,10 @@ import {
   Phone,
   Mail,
   Menu,
+  BarChart3,
+  PieChart,
+  Award,
+  CalendarClock,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/Sidebar';
@@ -69,6 +73,7 @@ function MainContent() {
   const [adminBranchesOpen, setAdminBranchesOpen] = useState(false);
   const [adminUsersOpen, setAdminUsersOpen] = useState(false);
   const [adminClassesOpen, setAdminClassesOpen] = useState(false);
+  const [adminClassesMode, setAdminClassesMode] = useState<'BLOCKS' | 'UPCOMING'>('BLOCKS');
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [initialNotificationId, setInitialNotificationId] = useState<string | null>(null);
 
@@ -129,7 +134,7 @@ function MainContent() {
     }
   }, [isAuthenticated, fetchUserData]);
 
-  // Métricas derivadas para el perfil Alumno (y reservas personales)
+  // Métricas derivadas para el perfil Alumno (CLIENT)
   const clientDashboardStats = useMemo(() => {
     const now = new Date();
     const active = myBookingsList
@@ -174,7 +179,7 @@ function MainContent() {
     };
   }, [myBookingsList]);
 
-  // Métricas derivadas para el perfil Administrador
+  // Métricas y Gráficos para el Dashboard Ejecutivo del Administrador
   const adminDashboardStats = useMemo(() => {
     const now = new Date();
     const activeStudioBookings = adminAllBookings.filter((b) => {
@@ -200,12 +205,106 @@ function MainContent() {
       (c) => c.status === 'SCHEDULED' || c.status === 'IN_PROGRESS',
     );
 
+    // 1. Datos para Gráfico 1: Asistencia de Clases
+    const attendedBookingsCount = adminAllBookings.filter(
+      (b) => b.attendanceStatus === 'ATTENDED',
+    ).length;
+    const noShowBookingsCount = adminAllBookings.filter(
+      (b) => b.attendanceStatus === 'NO_SHOW',
+    ).length;
+    const pendingAttendanceCount = adminAllBookings.filter(
+      (b) =>
+        (b.status === 'CONFIRMADA' || b.status === 'PENDIENTE_VALIDACION') &&
+        (!b.attendanceStatus || b.attendanceStatus === 'PENDING'),
+    ).length;
+    const cancelledBookingsCount = adminAllBookings.filter(
+      (b) => b.status === 'CANCELADA_CLIENTE' || b.status === 'RECHAZADA_ADMIN',
+    ).length;
+
+    const completedClassesCount = instructorClasses.filter(
+      (c) => c.status === 'COMPLETED' || (c.stats?.attended || 0) > 0,
+    ).length;
+    const cancelledClassesCount = instructorClasses.filter(
+      (c) => c.status === 'CANCELLED',
+    ).length;
+
+    const evaluatedAttendanceTotal = attendedBookingsCount + noShowBookingsCount;
+    const attendanceRatePct =
+      evaluatedAttendanceTotal > 0
+        ? Math.round((attendedBookingsCount / evaluatedAttendanceTotal) * 100)
+        : 100;
+
+    // 2. Datos para Gráfico 2: Sedes con Mayor Solicitud y Agendamientos
+    const branchMap = new Map<
+      string,
+      {
+        name: string;
+        bookingsCount: number;
+        totalCapacity: number;
+        occupiedSlots: number;
+        classesCount: number;
+      }
+    >();
+
+    for (const cls of instructorClasses) {
+      if (cls.status === 'CANCELLED') continue;
+      const bName = cls.branch?.name || 'Sede Principal';
+      const current = branchMap.get(bName) || {
+        name: bName,
+        bookingsCount: 0,
+        totalCapacity: 0,
+        occupiedSlots: 0,
+        classesCount: 0,
+      };
+      const enrolled = cls.stats?.enrolled ?? Math.max(0, cls.capacity - cls.availableSlots);
+      current.classesCount += 1;
+      current.totalCapacity += cls.capacity;
+      current.occupiedSlots += enrolled;
+      current.bookingsCount += enrolled;
+      branchMap.set(bName, current);
+    }
+
+    // Asegurar conteo también desde reservas globales si alguna sede no tenía clase en la lista
+    for (const bk of adminAllBookings) {
+      if (bk.status === 'CANCELADA_CLIENTE' || bk.status === 'RECHAZADA_ADMIN') continue;
+      const bName = bk.schedule?.branch?.name || 'Sede Principal';
+      if (!branchMap.has(bName)) {
+        branchMap.set(bName, {
+          name: bName,
+          bookingsCount: 1,
+          totalCapacity: bk.schedule?.capacity || 8,
+          occupiedSlots: 1,
+          classesCount: 1,
+        });
+      }
+    }
+
+    const branchStats = Array.from(branchMap.values()).sort(
+      (a, b) => b.bookingsCount - a.bookingsCount || b.classesCount - a.classesCount,
+    );
+    const maxBranchBookings = Math.max(1, ...branchStats.map((b) => b.bookingsCount));
+    const topBranch = branchStats[0] || null;
+
     return {
       pendingVouchersCount: adminPendingVouchers.length,
       activeStudioBookingsCount: activeStudioBookings.length,
       activeSchedulesCount: activeSchedules.length,
       totalRevenue,
       nextStudioClass: activeSchedules[0] || null,
+      attendanceChart: {
+        attended: attendedBookingsCount,
+        noShow: noShowBookingsCount,
+        pending: pendingAttendanceCount,
+        cancelled: cancelledBookingsCount,
+        attendanceRatePct,
+        completedClassesCount,
+        cancelledClassesCount,
+      },
+      branchChart: {
+        branches: branchStats,
+        maxBranchBookings,
+        topBranch,
+      },
     };
   }, [adminAllBookings, adminPendingVouchers, instructorClasses]);
 
@@ -280,7 +379,7 @@ function MainContent() {
 
   return (
     <div className="min-h-screen bg-sand-50 text-charcoal flex flex-col lg:pl-72 transition-[padding] duration-300">
-      {/* Sidebar Drawer & Desktop Navigation (Única barra de navegación en sesión activa) */}
+      {/* Sidebar Drawer & Desktop Navigation */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -291,8 +390,18 @@ function MainContent() {
           setMyBookingsOpen(true);
         }}
         onOpenClassHistory={() => setClassHistoryOpen(true)}
-        onOpenAttendance={() => setAttendanceOpen(true)}
-        onOpenAdminClasses={() => setAdminClassesOpen(true)}
+        onOpenAttendance={() => {
+          setAttendanceScheduleId(null);
+          setAttendanceOpen(true);
+        }}
+        onOpenUpcomingClasses={() => {
+          setAdminClassesMode('UPCOMING');
+          setAdminClassesOpen(true);
+        }}
+        onOpenAdminClasses={() => {
+          setAdminClassesMode('BLOCKS');
+          setAdminClassesOpen(true);
+        }}
         onOpenAdminBranches={() => setAdminBranchesOpen(true)}
         onOpenAdminUsers={() => setAdminUsersOpen(true)}
         onOpenAdminVouchers={() => setAdminVouchersOpen(true)}
@@ -301,12 +410,13 @@ function MainContent() {
           setNotificationsOpen(true);
         }}
         unreadCount={unreadCount}
+        pendingVouchersCount={adminDashboardStats.pendingVouchersCount}
         offeredWaitlistCount={offeredWaitlistEntries.length}
         activeView={activeView}
         onSelectView={(view) => setActiveView(view)}
       />
 
-      {/* Botón compacto solo para dispositivos móviles (< 1024px) para abrir el Sidebar */}
+      {/* Botón compacto solo para dispositivos móviles (< 1024px) */}
       <div className="lg:hidden sticky top-0 z-20 bg-[#220622] text-white px-4 py-3 flex items-center justify-between shadow-md">
         <button
           type="button"
@@ -335,8 +445,8 @@ function MainContent() {
       </div>
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-8 md:py-10 w-full">
-        {/* Urgent Waitlist Offer Alert Banner */}
-        {offeredWaitlistEntries.length > 0 && (
+        {/* Urgent Waitlist Offer Alert Banner (Solo Alumnos) */}
+        {user?.role === 'CLIENT' && offeredWaitlistEntries.length > 0 && (
           <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-white shrink-0">
@@ -397,10 +507,11 @@ function MainContent() {
         {activeView === 'CATALOG' && (
           <div>
             {/* ========================================================================= */}
-            {/* 1. PANTALLA DE INICIO PERFIL ADMINISTRADOR                                */}
+            {/* 1. DASHBOARD PRINCIPAL DEL ADMINISTRADOR (PANEL EJECUTIVO + 2 GRÁFICOS)   */}
             {/* ========================================================================= */}
             {isAuthenticated && user && user.role === 'ADMIN' && (
-              <div className="mb-8 space-y-4">
+              <div className="mb-8 space-y-5">
+                {/* Panel Ejecutivo */}
                 <div className="p-6 rounded-2xl bg-gradient-to-br from-[#261025] via-[#3a1b38] to-[#220622] text-white shadow-lg border border-[#3a1b38]">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
@@ -415,7 +526,7 @@ function MainContent() {
                           </span>
                         </div>
                         <p className="text-xs text-rose-100/80 mt-0.5">
-                          Control central de sedes, programación de clases, validación de vouchers y asistencia
+                          Dashboard de operación diaria, métricas de asistencia, demanda por sede y control de pagos
                         </p>
                       </div>
                     </div>
@@ -431,24 +542,30 @@ function MainContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setAdminClassesOpen(true)}
-                        className="px-3.5 py-2 text-xs font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-xl transition flex items-center gap-1.5"
+                        onClick={() => {
+                          setAttendanceScheduleId(null);
+                          setAttendanceOpen(true);
+                        }}
+                        className="px-3.5 py-2 text-xs font-semibold bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 rounded-xl transition flex items-center gap-1.5"
                       >
-                        <CalendarPlus className="w-3.5 h-3.5" />
-                        <span>Programar Clases</span>
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        <span>Asistencia del Día</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => setAccountModalOpen(true)}
-                        className="px-3.5 py-2 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 rounded-xl transition flex items-center gap-1.5"
+                        onClick={() => {
+                          setAdminClassesMode('BLOCKS');
+                          setAdminClassesOpen(true);
+                        }}
+                        className="px-3.5 py-2 text-xs font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-xl transition flex items-center gap-1.5"
                       >
-                        <UserCog className="w-3.5 h-3.5" />
-                        <span>Mi Cuenta</span>
+                        <CalendarPlus className="w-3.5 h-3.5" />
+                        <span>Bloques & Horarios</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* KPI Grid de Administración */}
+                  {/* KPI Grid de Administración (Sin Reservas Personales) */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-5 border-t border-white/15">
                     <button
                       type="button"
@@ -467,7 +584,7 @@ function MainContent() {
                         <span>{adminDashboardStats.pendingVouchersCount}</span>
                         {adminDashboardStats.pendingVouchersCount > 0 && (
                           <span className="text-[10px] font-semibold text-amber-300 animate-pulse">
-                            Requiere revisión
+                            En revisión
                           </span>
                         )}
                       </div>
@@ -476,24 +593,27 @@ function MainContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        setMyBookingsInitialTab('bookings');
-                        setMyBookingsOpen(true);
+                        setAdminClassesMode('UPCOMING');
+                        setAdminClassesOpen(true);
                       }}
                       className="p-3.5 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 text-left transition"
                     >
                       <div className="flex items-center justify-between text-xs text-rose-100/90 mb-1">
-                        <span>Reservas Activas</span>
-                        <BookOpen className="w-4 h-4 text-emerald-300" />
+                        <span>Alumnos Agendados</span>
+                        <Users className="w-4 h-4 text-emerald-300" />
                       </div>
                       <div className="text-2xl font-bold text-white flex items-baseline gap-1.5">
                         <span>{adminDashboardStats.activeStudioBookingsCount}</span>
-                        <span className="text-[11px] font-normal text-rose-100/70">en curso</span>
+                        <span className="text-[11px] font-normal text-rose-100/70">en próximas clases</span>
                       </div>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setAttendanceOpen(true)}
+                      onClick={() => {
+                        setAttendanceScheduleId(null);
+                        setAttendanceOpen(true);
+                      }}
                       className="p-3.5 rounded-xl bg-white/10 border border-white/15 hover:bg-white/15 text-left transition"
                     >
                       <div className="flex items-center justify-between text-xs text-rose-100/90 mb-1">
@@ -526,11 +646,33 @@ function MainContent() {
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setAttendanceOpen(true)}
+                        onClick={() => {
+                          setAttendanceScheduleId(null);
+                          setAttendanceOpen(true);
+                        }}
                         className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition flex items-center gap-1.5"
                       >
                         <ClipboardList className="w-3.5 h-3.5 text-emerald-300" />
-                        <span>Check-in & Nómina</span>
+                        <span>Asistencia & Check-in (Hoy)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAdminClassesMode('UPCOMING');
+                          setAdminClassesOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition flex items-center gap-1.5"
+                      >
+                        <CalendarClock className="w-3.5 h-3.5 text-sky-200" />
+                        <span>Próximas Clases</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setClassHistoryOpen(true)}
+                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition flex items-center gap-1.5"
+                      >
+                        <History className="w-3.5 h-3.5 text-purple-200" />
+                        <span>Historial de Clases</span>
                       </button>
                       <button
                         type="button"
@@ -548,19 +690,233 @@ function MainContent() {
                         <Users className="w-3.5 h-3.5 text-amber-200" />
                         <span>Usuarios</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setClassHistoryOpen(true)}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition flex items-center gap-1.5"
-                      >
-                        <History className="w-3.5 h-3.5 text-purple-200" />
-                        <span>Historial de Clases</span>
-                      </button>
                     </div>
                     <span className="text-[11px] text-rose-100/70 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Control de aforo y notificaciones activas
+                      Modo Instructor & Administrador activo
                     </span>
+                  </div>
+                </div>
+
+                {/* ========================================================================= */}
+                {/* SECCIÓN DE GRÁFICOS ANALÍTICOS DEL DASHBOARD (2 GRÁFICOS)                 */}
+                {/* ========================================================================= */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {/* GRÁFICO 1: ASISTENCIA DE CLASES Y ESTADO DE SESIONES */}
+                  <div className="bg-white p-5 rounded-2xl border border-sand-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
+                          <PieChart className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-charcoal">
+                            Gráfico de Asistencia de Clases
+                          </h3>
+                          <p className="text-[11px] text-charcoal-muted">
+                            Comparativa de asistencia de alumnos y sesiones realizadas vs canceladas
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {adminDashboardStats.attendanceChart.attendanceRatePct}% Asistencia
+                      </span>
+                    </div>
+
+                    {/* Barras Visuales de Asistencia */}
+                    <div className="space-y-3 pt-1">
+                      {(() => {
+                        const { attended, noShow, pending } = adminDashboardStats.attendanceChart;
+                        const total = Math.max(1, attended + noShow + pending);
+                        const attendedPct = Math.round((attended / total) * 100);
+                        const noShowPct = Math.round((noShow / total) * 100);
+                        const pendingPct = Math.round((pending / total) * 100);
+
+                        return (
+                          <>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-semibold text-emerald-800 flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                                  Alumnos Presentes (Asistieron)
+                                </span>
+                                <span className="font-bold text-charcoal">
+                                  {attended} ({attendedPct}%)
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.max(attended > 0 ? 8 : 0, attendedPct)}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-semibold text-rose-800 flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                  Inasistencias (No Presentes)
+                                </span>
+                                <span className="font-bold text-charcoal">
+                                  {noShow} ({noShowPct}%)
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.max(noShow > 0 ? 8 : 0, noShowPct)}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-semibold text-amber-800 flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                  Agendados por Realizar (Próximos)
+                                </span>
+                                <span className="font-bold text-charcoal">
+                                  {pending} ({pendingPct}%)
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.max(pending > 0 ? 8 : 0, pendingPct)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Footer Resumen de Clases Realizadas vs Canceladas */}
+                    <div className="pt-3 border-t border-sand-100 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-3">
+                        <span className="text-charcoal-muted">
+                          ✅ Clases Realizadas:{' '}
+                          <strong className="text-emerald-700">
+                            {adminDashboardStats.attendanceChart.completedClassesCount}
+                          </strong>
+                        </span>
+                        <span className="text-charcoal-muted">
+                          ❌ Suspendidas:{' '}
+                          <strong className="text-rose-700">
+                            {adminDashboardStats.attendanceChart.cancelledClassesCount}
+                          </strong>
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setClassHistoryOpen(true)}
+                        className="text-[11px] font-bold text-[#3a1b38] hover:underline flex items-center gap-1"
+                      >
+                        <span>Ver Historial</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* GRÁFICO 2: SEDES CON MAYOR SOLICITUD Y AGENDAMIENTOS */}
+                  <div className="bg-white p-5 rounded-2xl border border-sand-200 shadow-sm flex flex-col justify-between space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#3a1b38] border border-purple-200 flex items-center justify-center shrink-0">
+                          <BarChart3 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-charcoal">
+                            Agendamientos y Solicitud por Sede
+                          </h3>
+                          <p className="text-[11px] text-charcoal-muted">
+                            Ranking de sedes con mayor demanda de reservas y ocupación de cupos
+                          </p>
+                        </div>
+                      </div>
+
+                      {adminDashboardStats.branchChart.topBranch && (
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1 shrink-0">
+                          <Award className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Top: {adminDashboardStats.branchChart.topBranch.name}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Barras por Sede */}
+                    <div className="space-y-3 pt-1">
+                      {adminDashboardStats.branchChart.branches.length === 0 ? (
+                        <p className="text-xs text-charcoal-muted py-6 text-center">
+                          No hay datos de sedes registrados aún.
+                        </p>
+                      ) : (
+                        adminDashboardStats.branchChart.branches.map((b, idx) => {
+                          const barPct = Math.round(
+                            (b.bookingsCount / adminDashboardStats.branchChart.maxBranchBookings) *
+                              100,
+                          );
+                          const occupancyPct =
+                            b.totalCapacity > 0
+                              ? Math.round((b.occupiedSlots / b.totalCapacity) * 100)
+                              : 0;
+
+                          return (
+                            <div key={b.name} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-bold text-charcoal flex items-center gap-1.5">
+                                  <MapPin
+                                    className={`w-3.5 h-3.5 ${
+                                      idx === 0 ? 'text-[#d92676]' : 'text-[#3a1b38]'
+                                    }`}
+                                  />
+                                  <span>{b.name}</span>
+                                  {idx === 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-50 text-[#d92676] font-bold border border-rose-200">
+                                      Mayor solicitud
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="font-bold text-charcoal">
+                                  {b.bookingsCount}{' '}
+                                  {b.bookingsCount === 1 ? 'agendamiento' : 'agendamientos'}{' '}
+                                  <span className="text-[11px] font-normal text-charcoal-muted">
+                                    ({occupancyPct}% ocupación)
+                                  </span>
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    idx === 0 ? 'bg-[#d92676]' : 'bg-[#3a1b38]'
+                                  }`}
+                                  style={{
+                                    width: `${Math.max(b.bookingsCount > 0 ? 12 : 4, barPct)}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-sand-100 flex items-center justify-between text-xs">
+                      <span className="text-charcoal-muted">
+                        Total sedes activas:{' '}
+                        <strong className="text-charcoal">
+                          {adminDashboardStats.branchChart.branches.length}
+                        </strong>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAdminBranchesOpen(true)}
+                        className="text-[11px] font-bold text-[#3a1b38] hover:underline flex items-center gap-1"
+                      >
+                        <span>Administrar Sedes</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -571,7 +927,6 @@ function MainContent() {
             {/* ========================================================================= */}
             {isAuthenticated && user && user.role === 'CLIENT' && (
               <div className="mb-8 space-y-5">
-                {/* Tarjeta Principal de Bienvenida y Datos Generales */}
                 <div className="p-6 rounded-2xl bg-white border border-sand-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
@@ -639,9 +994,8 @@ function MainContent() {
                     </div>
                   </div>
 
-                  {/* Grid de 2 Columnas en Inicio del Alumno: (A) Últimas / Próximas Clases y (B) Apartado de Notificaciones */}
+                  {/* Grid de 2 Columnas en Inicio del Alumno */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-sand-100">
-                    {/* Apartado A: Mis Últimas y Próximas Clases */}
                     <div className="p-4 rounded-2xl bg-sand-50/70 border border-sand-200 flex flex-col justify-between space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -720,7 +1074,6 @@ function MainContent() {
                       )}
                     </div>
 
-                    {/* Apartado B: Avisos y Notificaciones del Alumno */}
                     <div className="p-4 rounded-2xl bg-purple-50/40 border border-purple-200/70 flex flex-col justify-between space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -803,6 +1156,10 @@ function MainContent() {
               onRequestLogin={() => handleOpenAuth('login')}
               onSelectSchedule={handleSelectSchedule}
               onOpenAccount={() => setAccountModalOpen(true)}
+              onManageSchedule={(sch) => {
+                setAttendanceScheduleId(sch.id);
+                setAttendanceOpen(true);
+              }}
             />
           </div>
         )}
@@ -846,10 +1203,14 @@ function MainContent() {
       <ClassHistoryModal
         isOpen={classHistoryOpen}
         onClose={() => setClassHistoryOpen(false)}
-        onOpenMyBookings={() => {
-          setMyBookingsInitialTab('bookings');
-          setMyBookingsOpen(true);
-        }}
+        onOpenMyBookings={
+          user?.role === 'CLIENT'
+            ? () => {
+                setMyBookingsInitialTab('bookings');
+                setMyBookingsOpen(true);
+              }
+            : undefined
+        }
       />
 
       <AdminVouchersModal
@@ -867,6 +1228,7 @@ function MainContent() {
         }}
         initialScheduleId={attendanceScheduleId}
         refreshKey={attendanceRefreshKey}
+        onOpenHistory={() => setClassHistoryOpen(true)}
       />
 
       <AdminBranchesModal
@@ -883,12 +1245,14 @@ function MainContent() {
 
       <AdminClassesModal
         isOpen={adminClassesOpen}
+        mode={adminClassesMode}
         onClose={() => {
           setAdminClassesOpen(false);
           handleRefreshSchedule();
         }}
         onUpdated={handleRefreshSchedule}
         onViewAttendees={(schId) => {
+          setAdminClassesOpen(false);
           setAttendanceScheduleId(schId);
           setAttendanceOpen(true);
         }}
@@ -905,7 +1269,6 @@ function MainContent() {
         initialNotificationId={initialNotificationId}
       />
 
-      {/* Modal para Aceptar Cupo Ofrecido desde el Banner */}
       {acceptingOfferEntry && (
         <WaitlistAcceptModal
           entry={acceptingOfferEntry}

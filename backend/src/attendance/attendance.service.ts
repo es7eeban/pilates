@@ -33,7 +33,6 @@ export class AttendanceService {
       if (query.all === false) {
         where.instructorId = user.id;
       }
-      // Sin filtro de instructor para ADMIN por defecto: ve todas las clases
     } else {
       where.instructorId = user.id;
     }
@@ -63,44 +62,59 @@ export class AttendanceService {
           select: { id: true, name: true, email: true, phone: true },
         },
         bookings: {
-          where: {
-            status: {
-              in: [
-                BookingStatus.CONFIRMADA,
-                BookingStatus.FINALIZADA,
-                BookingStatus.PENDIENTE_VALIDACION,
-              ],
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+            payment: {
+              select: {
+                id: true,
+                amount: true,
+                status: true,
+                gatewayProvider: true,
+              },
             },
           },
-          select: {
-            id: true,
-            status: true,
-            attendanceStatus: true,
-          },
+          orderBy: { createdAt: 'asc' },
         },
       },
       orderBy: { startTime: 'asc' },
     });
 
     return schedules.map((s) => {
+      const activeBookings = s.bookings.filter(
+        (b) =>
+          b.status === BookingStatus.CONFIRMADA ||
+          b.status === BookingStatus.FINALIZADA ||
+          b.status === BookingStatus.PENDIENTE_VALIDACION ||
+          b.status === BookingStatus.PENDIENTE_PAGO,
+      );
       const confirmedBookings = s.bookings.filter(
         (b) => b.status === BookingStatus.CONFIRMADA || b.status === BookingStatus.FINALIZADA,
       );
       const pendingValidationCount = s.bookings.filter(
         (b) => b.status === BookingStatus.PENDIENTE_VALIDACION,
       ).length;
+      const unpaidCount = s.bookings.filter(
+        (b) => b.status === BookingStatus.PENDIENTE_PAGO,
+      ).length;
 
-      const totalEnrolled = confirmedBookings.length;
-      const attendedCount = confirmedBookings.filter(
+      const totalEnrolled = activeBookings.length;
+      const attendedCount = activeBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.ATTENDED,
       ).length;
-      const noShowCount = confirmedBookings.filter(
+      const noShowCount = activeBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.NO_SHOW,
       ).length;
-      const excusedCount = confirmedBookings.filter(
+      const excusedCount = activeBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.EXCUSED,
       ).length;
-      const pendingCount = confirmedBookings.filter(
+      const pendingCount = activeBookings.filter(
         (b) => b.attendanceStatus === AttendanceStatus.PENDING,
       ).length;
 
@@ -119,10 +133,13 @@ export class AttendanceService {
         classType: s.classType,
         branch: s.branch,
         instructor: s.instructor,
+        bookings: s.bookings,
         stats: {
           capacity: s.capacity,
           enrolled: totalEnrolled,
+          confirmed: confirmedBookings.length,
           pendingValidation: pendingValidationCount,
+          unpaid: unpaidCount,
           availableSlots: s.availableSlots,
           attended: attendedCount,
           noShow: noShowCount,
@@ -148,6 +165,7 @@ export class AttendanceService {
               in: [
                 BookingStatus.CONFIRMADA,
                 BookingStatus.PENDIENTE_VALIDACION,
+                BookingStatus.PENDIENTE_PAGO,
                 BookingStatus.FINALIZADA,
               ],
             },
@@ -185,25 +203,27 @@ export class AttendanceService {
       );
     }
 
-    const confirmedBookings = schedule.bookings.filter(
-      (b) => b.status === BookingStatus.CONFIRMADA || b.status === BookingStatus.FINALIZADA,
-    );
+    const activeBookings = schedule.bookings;
 
-    const attendedCount = confirmedBookings.filter(
+    const attendedCount = activeBookings.filter(
       (b) => b.attendanceStatus === AttendanceStatus.ATTENDED,
     ).length;
-    const noShowCount = confirmedBookings.filter(
+    const noShowCount = activeBookings.filter(
       (b) => b.attendanceStatus === AttendanceStatus.NO_SHOW,
     ).length;
-    const excusedCount = confirmedBookings.filter(
+    const excusedCount = activeBookings.filter(
       (b) => b.attendanceStatus === AttendanceStatus.EXCUSED,
     ).length;
-    const pendingCount = confirmedBookings.filter(
+    const pendingCount = activeBookings.filter(
       (b) => b.attendanceStatus === AttendanceStatus.PENDING,
     ).length;
 
-    const pendingValidationCount = schedule.bookings.filter(
+    const pendingValidationCount = activeBookings.filter(
       (b) => b.status === BookingStatus.PENDIENTE_VALIDACION,
+    ).length;
+
+    const unpaidCount = activeBookings.filter(
+      (b) => b.status === BookingStatus.PENDIENTE_PAGO,
     ).length;
 
     return {
@@ -219,8 +239,9 @@ export class AttendanceService {
         instructor: schedule.instructor,
       },
       stats: {
-        totalEnrolled: confirmedBookings.length,
+        totalEnrolled: activeBookings.length,
         pendingValidationCount,
+        unpaidCount,
         attendedCount,
         noShowCount,
         excusedCount,
@@ -350,7 +371,7 @@ export class AttendanceService {
       },
     });
 
-    // Si la clase pasa a COMPLETED, marcamos reservas confirmadas como FINALIZADA
+    // Si la clase pasa a COMPLETED ("Clase Realizada"), marcamos reservas confirmadas como FINALIZADA
     if (status === ScheduleStatus.COMPLETED) {
       await this.prisma.booking.updateMany({
         where: {

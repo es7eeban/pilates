@@ -14,6 +14,8 @@ import {
   CalendarPlus,
   BellRing,
   Building2,
+  Users,
+  CalendarClock,
 } from 'lucide-react';
 import type { ClassType, ClassSchedule, Branch } from '../types/schedule';
 import type {
@@ -29,15 +31,43 @@ interface AdminClassesModalProps {
   onClose: () => void;
   onUpdated: () => void;
   onViewAttendees?: (scheduleId: string) => void;
+  mode?: 'BLOCKS' | 'UPCOMING';
 }
+
+interface WeeklyBlockGroup {
+  key: string;
+  dayOfWeekNum: number; // 1 = Lunes ... 6 = Sábado, 7 = Domingo
+  dayLabel: string;
+  amPm: 'AM' | 'PM';
+  startTimeStr: string;
+  endTimeStr: string;
+  branchId: string;
+  branchName: string;
+  branchAddress?: string;
+  capacity: number;
+  price: number;
+  sessionsCount: number;
+  totalEnrolledAcrossSessions: number;
+  sampleSchedule: ClassSchedule;
+}
+
+const DAY_NAMES_BY_ISO: Record<number, string> = {
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+  7: 'Domingo',
+};
 
 export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   isOpen,
   onClose,
   onUpdated,
   onViewAttendees,
+  mode = 'BLOCKS',
 }) => {
-  // Common data
   const [classTypes, setClassTypes] = useState<ClassType[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
@@ -46,12 +76,12 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Filters for schedule list
+  // Filters
   const [filterBranchId, setFilterBranchId] = useState<string>('ALL');
   const [filterDate, setFilterDate] = useState<string>('');
   const [filterTimeOfDay, setFilterTimeOfDay] = useState<'ALL' | 'AM' | 'PM'>('ALL');
 
-  // Form State: Single Schedule
+  // Form State: Single Schedule (Para Próximas Clases)
   const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
   const [schBranchId, setSchBranchId] = useState('');
   const [schDate, setSchDate] = useState('');
@@ -60,11 +90,11 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   const [schCapacity, setSchCapacity] = useState(8);
   const [schPrice, setSchPrice] = useState(15000);
 
-  // Form State: Bulk Schedules
+  // Form State: Weekly Block Generator (Para Gestión de Clases & Horarios)
   const [isBulkFormOpen, setIsBulkFormOpen] = useState(false);
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');
-  const [bulkDaysOfWeek, setBulkDaysOfWeek] = useState<number[]>([1, 3, 5]); // Lun, Mie, Vie
+  const [bulkDaysOfWeek, setBulkDaysOfWeek] = useState<number[]>([5, 6]); // Viernes y Sábado por defecto
   const [bulkSlotStart, setBulkSlotStart] = useState('09:00');
   const [bulkSlotEnd, setBulkSlotEnd] = useState('10:00');
 
@@ -82,9 +112,13 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   // Form State: Cancel / Delete Single Day with Notification
   const [cancellingSchedule, setCancellingSchedule] = useState<ClassSchedule | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelNotifyTarget, setCancelNotifyTarget] = useState<'ENROLLED' | 'ALL_CLIENTS'>('ALL_CLIENTS');
+  const [cancelNotifyTarget, setCancelNotifyTarget] = useState<'ENROLLED' | 'ALL_CLIENTS'>(
+    'ALL_CLIENTS',
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const todayIso = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -94,8 +128,8 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
         classTypesApi.getAll(true),
         branchesApi.getAll(true),
         schedulesApi.getAll({
-          dateFrom: new Date().toISOString().split('T')[0],
-          dateTo: new Date(Date.now() + 45 * 86400000).toISOString().split('T')[0],
+          dateFrom: todayIso,
+          dateTo: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
         }),
       ]);
       setClassTypes(cts);
@@ -104,11 +138,11 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
 
       if (brs.length > 0 && !schBranchId) setSchBranchId(brs[0].id);
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (!schDate) setSchDate(todayStr);
-      if (!bulkStartDate) setBulkStartDate(todayStr);
+      const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      if (!schDate) setSchDate(tomorrowStr);
+      if (!bulkStartDate) setBulkStartDate(todayIso);
       if (!bulkEndDate)
-        setBulkEndDate(new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]);
+        setBulkEndDate(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
     } catch (err: any) {
       setError(err.message || 'Error al cargar información de clases');
     } finally {
@@ -126,27 +160,91 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
       setError(null);
       setSuccessMsg(null);
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
-  const filteredSchedules = useMemo(() => {
-    return schedules.filter((sch) => {
+  // =========================================================================
+  // MODO 1 ('BLOCKS'): AGRUPACIÓN POR BLOQUES SEMANALES (EJ. VIERNES AM, SÁBADO AM)
+  // =========================================================================
+  const weeklyBlocks = useMemo<WeeklyBlockGroup[]>(() => {
+    const activeSchedules = schedules.filter((sch) => {
+      if (sch.status === 'CANCELLED') return false;
       if (filterBranchId !== 'ALL' && sch.branchId !== filterBranchId) return false;
-      if (filterDate) {
-        const schDay = new Date(sch.startTime).toISOString().split('T')[0];
-        if (schDay !== filterDate) return false;
+      const hour = new Date(sch.startTime).getUTCHours();
+      if (filterTimeOfDay === 'AM' && hour >= 14) return false;
+      if (filterTimeOfDay === 'PM' && hour < 14) return false;
+      return true;
+    });
+
+    const map = new Map<string, WeeklyBlockGroup>();
+
+    for (const sch of activeSchedules) {
+      const startObj = new Date(sch.startTime);
+      const endObj = new Date(sch.endTime);
+      const jsDay = startObj.getUTCDay();
+      const isoDay = jsDay === 0 ? 7 : jsDay;
+      const dayLabel = DAY_NAMES_BY_ISO[isoDay] || 'Día';
+      const hour = startObj.getUTCHours();
+      const amPm: 'AM' | 'PM' = hour < 14 ? 'AM' : 'PM';
+      const startTimeStr = startObj.toISOString().slice(11, 16);
+      const endTimeStr = endObj.toISOString().slice(11, 16);
+      const branchId = sch.branchId || 'default';
+      const branchName = sch.branch?.name || 'Sede Principal';
+
+      const key = `${isoDay}-${amPm}-${startTimeStr}-${branchId}`;
+      const enrolled = Math.max(0, sch.capacity - sch.availableSlots);
+
+      const existing = map.get(key);
+      if (existing) {
+        existing.sessionsCount += 1;
+        existing.totalEnrolledAcrossSessions += enrolled;
+      } else {
+        map.set(key, {
+          key,
+          dayOfWeekNum: isoDay,
+          dayLabel,
+          amPm,
+          startTimeStr,
+          endTimeStr,
+          branchId,
+          branchName,
+          branchAddress: sch.branch?.address,
+          capacity: sch.capacity,
+          price: Number(sch.price),
+          sessionsCount: 1,
+          totalEnrolledAcrossSessions: enrolled,
+          sampleSchedule: sch,
+        });
       }
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.dayOfWeekNum !== b.dayOfWeekNum) return a.dayOfWeekNum - b.dayOfWeekNum;
+      return a.startTimeStr.localeCompare(b.startTimeStr);
+    });
+  }, [schedules, filterBranchId, filterTimeOfDay]);
+
+  // =========================================================================
+  // MODO 2 ('UPCOMING'): CLASES PROGRAMADAS DE DÍAS POSTERIORES
+  // =========================================================================
+  const upcomingSchedules = useMemo(() => {
+    return schedules.filter((sch) => {
+      const schDay = new Date(sch.startTime).toISOString().split('T')[0];
+      // En Próximas Clases mostramos las sesiones de días posteriores a hoy (o según filtro de fecha)
+      if (!filterDate && schDay <= todayIso) return false;
+      if (filterDate && schDay !== filterDate) return false;
+      if (filterBranchId !== 'ALL' && sch.branchId !== filterBranchId) return false;
       if (filterTimeOfDay !== 'ALL') {
         const hour = new Date(sch.startTime).getUTCHours();
-        if (filterTimeOfDay === 'AM' && hour >= 12) return false;
-        if (filterTimeOfDay === 'PM' && hour < 12) return false;
+        if (filterTimeOfDay === 'AM' && hour >= 14) return false;
+        if (filterTimeOfDay === 'PM' && hour < 14) return false;
       }
       return true;
     });
-  }, [schedules, filterBranchId, filterDate, filterTimeOfDay]);
+  }, [schedules, filterBranchId, filterDate, filterTimeOfDay, todayIso]);
 
   if (!isOpen) return null;
 
-  // --- Handlers: Create & Bulk Schedules ---
+  // --- Handlers ---
 
   const handleCreateSingleSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +271,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
       };
 
       await schedulesApi.create(payload);
-      setSuccessMsg('Sesión de clase agendada con éxito en el calendario');
+      setSuccessMsg('Sesión de clase agendada con éxito');
       setIsScheduleFormOpen(false);
       await fetchAllData();
       onUpdated();
@@ -213,18 +311,18 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
       };
 
       const res = await schedulesApi.bulkGenerate(payload);
-      setSuccessMsg(`¡Se han generado masivamente ${res.count} sesiones de clase!`);
+      setSuccessMsg(
+        `¡Bloque horario configurado! Se programaron ${res.count} sesiones en las fechas correspondientes.`,
+      );
       setIsBulkFormOpen(false);
       await fetchAllData();
       onUpdated();
     } catch (err: any) {
-      setError(err.message || 'Error al generar sesiones recurrentes');
+      setError(err.message || 'Error al configurar el bloque semanal');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // --- Handlers: Edit / Reschedule Single Day ---
 
   const handleOpenEditSchedule = (sch: ClassSchedule) => {
     setCancellingSchedule(null);
@@ -283,8 +381,6 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
     }
   };
 
-  // --- Handlers: Cancel / Delete Single Day ---
-
   const handleOpenCancelSchedule = (sch: ClassSchedule) => {
     setEditingSchedule(null);
     setIsScheduleFormOpen(false);
@@ -312,8 +408,8 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
       await schedulesApi.cancel(cancellingSchedule.id, payload);
       setSuccessMsg(
         cancelNotifyTarget === 'ALL_CLIENTS'
-          ? 'Día de clase cancelado y notificación general enviada a todos los alumnos.'
-          : 'Día de clase cancelado y notificación enviada a los alumnos inscritos.',
+          ? 'Día de clase suspendido y notificación general enviada a todos los alumnos.'
+          : 'Día de clase suspendido y notificación enviada a los alumnos inscritos.',
       );
       setCancellingSchedule(null);
       await fetchAllData();
@@ -336,18 +432,33 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-sand-50/60">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-sage-900">Gestión de Clases & Horarios</h2>
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-terra-light text-terra border border-terra/20">
-                Admin · V1
-              </span>
+        {/* Header dinámico según modo: BLOCKS (Administración) vs UPCOMING (Próximas Clases) */}
+        <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-[#faf9f6]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center shadow-sm">
+              {mode === 'BLOCKS' ? (
+                <CalendarPlus className="w-5 h-5" />
+              ) : (
+                <CalendarClock className="w-5 h-5" />
+              )}
             </div>
-            <p className="text-xs text-charcoal-muted mt-0.5">
-              Programa sesiones individuales o recurrentes, o modifica/cancela un día específico con aviso a los alumnos
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#220622]">
+                  {mode === 'BLOCKS'
+                    ? 'Gestión de Clases & Horarios (Bloques Semanales)'
+                    : 'Próximas Clases Programadas (Días Posteriores)'}
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-[#3a1b38] border border-purple-200">
+                  {mode === 'BLOCKS' ? 'Administración' : 'Operación & Agenda'}
+                </span>
+              </div>
+              <p className="text-xs text-charcoal-muted mt-0.5">
+                {mode === 'BLOCKS'
+                  ? 'Resumen de tus bloques de clases por día de la semana (AM / PM), sede, horario y cantidad máxima de alumnos'
+                  : 'Revisa las sesiones de los próximos días, alumnos agendados o reprograma/suspende una fecha específica'}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -357,11 +468,11 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
           </button>
         </div>
 
-        {/* Action & Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-sand-200 bg-sand-50/30">
+        {/* Barra de Filtros y Acciones */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-sand-200 bg-sand-50/40">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <div className="flex items-center gap-1.5 bg-white border border-sand-200 rounded-xl px-2.5 py-1.5">
-              <Building2 className="w-3.5 h-3.5 text-sage-700" />
+              <Building2 className="w-3.5 h-3.5 text-[#3a1b38]" />
               <select
                 value={filterBranchId}
                 onChange={(e) => setFilterBranchId(e.target.value)}
@@ -382,60 +493,65 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                   key={slot}
                   type="button"
                   onClick={() => setFilterTimeOfDay(slot)}
-                  className={`px-2 py-0.5 rounded-lg font-bold transition ${
+                  className={`px-2.5 py-0.5 rounded-lg font-bold transition ${
                     filterTimeOfDay === slot
                       ? 'bg-[#3a1b38] text-white'
                       : 'text-charcoal-muted hover:text-charcoal'
                   }`}
                 >
-                  {slot === 'ALL' ? 'Todo' : slot}
+                  {slot === 'ALL' ? 'AM y PM' : `Bloque ${slot}`}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 bg-white border border-sand-200 rounded-xl px-2.5 py-1">
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-charcoal focus:outline-none"
-              />
-              {filterDate && (
-                <button
-                  type="button"
-                  onClick={() => setFilterDate('')}
-                  className="text-charcoal-muted hover:text-charcoal"
-                  title="Limpiar fecha"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+            {mode === 'UPCOMING' && (
+              <div className="flex items-center gap-1.5 bg-white border border-sand-200 rounded-xl px-2.5 py-1">
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-charcoal focus:outline-none"
+                />
+                {filterDate && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterDate('')}
+                    className="text-charcoal-muted hover:text-charcoal"
+                    title="Limpiar fecha"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             {!isScheduleFormOpen && !isBulkFormOpen && !editingSchedule && !cancellingSchedule && (
               <>
-                <button
-                  onClick={() => {
-                    setIsScheduleFormOpen(true);
-                    setIsBulkFormOpen(false);
-                  }}
-                  className="px-3 py-1.5 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Agendar Horario</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsBulkFormOpen(true);
-                    setIsScheduleFormOpen(false);
-                  }}
-                  className="px-3 py-1.5 bg-sand-200 hover:bg-sand-300 text-sage-900 rounded-xl text-xs font-bold transition flex items-center gap-1 border border-sand-300"
-                >
-                  <CalendarPlus className="w-3.5 h-3.5 text-sage-700" />
-                  <span>Generador Recurrente</span>
-                </button>
+                {mode === 'BLOCKS' ? (
+                  <button
+                    onClick={() => {
+                      setIsBulkFormOpen(true);
+                      setIsScheduleFormOpen(false);
+                    }}
+                    className="px-3.5 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                    <span>+ Configurar Bloque Semanal (AM / PM)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsScheduleFormOpen(true);
+                      setIsBulkFormOpen(false);
+                    }}
+                    className="px-3.5 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Agendar Clase en Fecha Puntual</span>
+                  </button>
+                )}
               </>
             )}
 
@@ -443,15 +559,15 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
               type="button"
               onClick={fetchAllData}
               disabled={loading}
-              className="p-1.5 text-charcoal-muted hover:text-charcoal bg-sand-100 hover:bg-sand-200 rounded-xl transition border border-sand-200"
-              title="Recargar datos de clases"
+              className="p-2 text-charcoal-muted hover:text-charcoal bg-white hover:bg-sand-100 rounded-xl transition border border-sand-200"
+              title="Actualizar"
             >
               <Loader2 className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
 
-        {/* Content Body */}
+        {/* Cuerpo Principal */}
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
@@ -467,14 +583,187 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
             </div>
           )}
 
-          {/* Form 1: Single Schedule */}
+          {/* Formulario Configurar Bloque Semanal Recurrente */}
+          {isBulkFormOpen && (
+            <form
+              onSubmit={handleBulkGenerateSchedules}
+              className="p-5 bg-purple-50/50 rounded-2xl border border-purple-200 space-y-4 animate-in fade-in text-xs"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-purple-200">
+                <div>
+                  <h3 className="font-bold text-[#220622] text-sm">
+                    Configurar Bloque de Clases Semanal (Ej. Viernes AM / Sábado AM)
+                  </h3>
+                  <p className="text-[11px] text-charcoal-muted">
+                    Selecciona los días que impartes clases, la sede, el horario (AM o PM) y la cantidad máxima de alumnos.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBulkFormOpen(false)}
+                  className="text-charcoal-muted hover:text-charcoal font-bold"
+                >
+                  ✕ Cerrar
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                <div>
+                  <label className="block font-bold text-charcoal mb-1">Sede *</label>
+                  <select
+                    value={schBranchId}
+                    onChange={(e) => setSchBranchId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:outline-none focus:border-[#3a1b38]"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-charcoal mb-1">Hora Inicio *</label>
+                    <input
+                      type="time"
+                      value={bulkSlotStart}
+                      onChange={(e) => setBulkSlotStart(e.target.value)}
+                      className="w-full px-2.5 py-2 bg-white border border-sand-300 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-charcoal mb-1">Hora Término *</label>
+                    <input
+                      type="time"
+                      value={bulkSlotEnd}
+                      onChange={(e) => setBulkSlotEnd(e.target.value)}
+                      className="w-full px-2.5 py-2 bg-white border border-sand-300 rounded-xl"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-charcoal mb-1">
+                    Cantidad Máx. de Alumnos *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={schCapacity}
+                    onChange={(e) => setSchCapacity(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-charcoal mb-1">Desde Fecha *</label>
+                  <input
+                    type="date"
+                    value={bulkStartDate}
+                    onChange={(e) => setBulkStartDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-charcoal mb-1">Hasta Fecha *</label>
+                  <input
+                    type="date"
+                    value={bulkEndDate}
+                    onChange={(e) => setBulkEndDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-charcoal mb-1">Tarifa por Clase (CLP)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="500"
+                    value={schPrice}
+                    onChange={(e) => setSchPrice(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
+                  />
+                </div>
+
+                <div className="sm:col-span-3">
+                  <label className="block font-bold text-charcoal mb-1.5">
+                    Días de la Semana en que se imparte este bloque:
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {[
+                      { day: 1, label: 'Lunes' },
+                      { day: 2, label: 'Martes' },
+                      { day: 3, label: 'Miércoles' },
+                      { day: 4, label: 'Jueves' },
+                      { day: 5, label: 'Viernes' },
+                      { day: 6, label: 'Sábado' },
+                      { day: 7, label: 'Domingo' },
+                    ].map((d) => {
+                      const isSelected = bulkDaysOfWeek.includes(d.day);
+                      return (
+                        <button
+                          key={d.day}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setBulkDaysOfWeek(bulkDaysOfWeek.filter((x) => x !== d.day));
+                            } else {
+                              setBulkDaysOfWeek([...bulkDaysOfWeek, d.day]);
+                            }
+                          }}
+                          className={`px-3.5 py-1.5 rounded-xl font-bold transition text-xs border ${
+                            isSelected
+                              ? 'bg-[#3a1b38] text-white border-[#3a1b38] shadow-xs'
+                              : 'bg-white text-charcoal hover:bg-sand-100 border-sand-300'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-purple-200">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkFormOpen(false)}
+                  className="px-3 py-1.5 text-charcoal-muted hover:text-charcoal"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || bulkDaysOfWeek.length === 0}
+                  className="px-4 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                  )}
+                  Guardar Bloque Semanal
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Formulario Agendar Fecha Puntual */}
           {isScheduleFormOpen && (
             <form
               onSubmit={handleCreateSingleSchedule}
               className="p-4 bg-sand-50/80 rounded-2xl border border-sand-200 space-y-3 animate-in fade-in text-xs"
             >
               <div className="flex items-center justify-between pb-2 border-b border-sand-200">
-                <h3 className="font-bold text-sage-900 text-sm">Programar Nueva Sesión de Clase</h3>
+                <h3 className="font-bold text-sage-900 text-sm">Programar Nueva Sesión Puntual</h3>
                 <button
                   type="button"
                   onClick={() => setIsScheduleFormOpen(false)}
@@ -490,24 +779,24 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                   <select
                     value={schBranchId}
                     onChange={(e) => setSchBranchId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   >
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.name} ({b.commune || b.city})
+                        {b.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-charcoal mb-1">Fecha de la Clase *</label>
+                  <label className="block font-semibold text-charcoal mb-1">Fecha *</label>
                   <input
                     type="date"
                     value={schDate}
                     onChange={(e) => setSchDate(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   />
                 </div>
 
@@ -519,7 +808,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                       value={schStartTime}
                       onChange={(e) => setSchStartTime(e.target.value)}
                       required
-                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl"
                     />
                   </div>
                   <div>
@@ -529,20 +818,22 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                       value={schEndTime}
                       onChange={(e) => setSchEndTime(e.target.value)}
                       required
-                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-charcoal mb-1">Aforo Máximo (Camas)</label>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Cantidad Máx. Alumnos
+                  </label>
                   <input
                     type="number"
                     min="1"
                     max="30"
                     value={schCapacity}
                     onChange={(e) => setSchCapacity(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   />
                 </div>
 
@@ -554,7 +845,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                     step="500"
                     value={schPrice}
                     onChange={(e) => setSchPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   />
                 </div>
               </div>
@@ -572,179 +863,18 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-3.5 h-3.5" />
+                  )}
                   Publicar Horario
                 </button>
               </div>
             </form>
           )}
 
-          {/* Form 2: Bulk Generate */}
-          {isBulkFormOpen && (
-            <form
-              onSubmit={handleBulkGenerateSchedules}
-              className="p-4 bg-sage-50/60 rounded-2xl border border-sage-300 space-y-3 animate-in fade-in text-xs"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-sage-200">
-                <div>
-                  <h3 className="font-bold text-sage-900 text-sm">Generador de Horarios Recurrentes</h3>
-                  <p className="text-[11px] text-charcoal-muted">
-                    Define los días de la semana (ej. todos los Viernes AM) en una sede; luego podrás modificar o eliminar días puntuales si surge algún imprevisto.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsBulkFormOpen(false)}
-                  className="text-charcoal-muted hover:text-charcoal"
-                >
-                  Cancelar
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-semibold text-charcoal mb-1">Fecha Inicio Rango *</label>
-                  <input
-                    type="date"
-                    value={bulkStartDate}
-                    onChange={(e) => setBulkStartDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-charcoal mb-1">Fecha Fin Rango *</label>
-                  <input
-                    type="date"
-                    value={bulkEndDate}
-                    onChange={(e) => setBulkEndDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-charcoal mb-1">Sede *</label>
-                  <select
-                    value={schBranchId}
-                    onChange={(e) => setSchBranchId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-sage-500 focus:outline-none"
-                  >
-                    {branches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block font-semibold text-charcoal mb-1">Hora Inicio</label>
-                    <input
-                      type="time"
-                      value={bulkSlotStart}
-                      onChange={(e) => setBulkSlotStart(e.target.value)}
-                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-charcoal mb-1">Hora Fin</label>
-                    <input
-                      type="time"
-                      value={bulkSlotEnd}
-                      onChange={(e) => setBulkSlotEnd(e.target.value)}
-                      className="w-full px-2 py-2 bg-white border border-sand-300 rounded-xl"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-charcoal mb-1">Aforo Máximo (Camas)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={schCapacity}
-                    onChange={(e) => setSchCapacity(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-charcoal mb-1">Tarifa (CLP)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="500"
-                    value={schPrice}
-                    onChange={(e) => setSchPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
-                  />
-                </div>
-
-                <div className="sm:col-span-3">
-                  <label className="block font-semibold text-charcoal mb-1.5">
-                    Días de la Semana a Programar:
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {[
-                      { day: 1, label: 'Lunes' },
-                      { day: 2, label: 'Martes' },
-                      { day: 3, label: 'Miércoles' },
-                      { day: 4, label: 'Jueves' },
-                      { day: 5, label: 'Viernes' },
-                      { day: 6, label: 'Sábado' },
-                      { day: 0, label: 'Domingo' },
-                    ].map((d) => {
-                      const isSelected = bulkDaysOfWeek.includes(d.day);
-                      return (
-                        <button
-                          key={d.day}
-                          type="button"
-                          onClick={() => {
-                            if (isSelected) {
-                              setBulkDaysOfWeek(bulkDaysOfWeek.filter((x) => x !== d.day));
-                            } else {
-                              setBulkDaysOfWeek([...bulkDaysOfWeek, d.day]);
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-xl font-bold transition text-xs border ${
-                            isSelected
-                              ? 'bg-[#3a1b38] text-white border-[#3a1b38] shadow-sm'
-                              : 'bg-white text-charcoal hover:bg-sand-100 border-sand-300'
-                          }`}
-                        >
-                          {d.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-sage-200">
-                <button
-                  type="button"
-                  onClick={() => setIsBulkFormOpen(false)}
-                  className="px-3 py-1.5 text-charcoal-muted hover:text-charcoal"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || bulkDaysOfWeek.length === 0}
-                  className="px-4 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CalendarPlus className="w-3.5 h-3.5" />}
-                  Generar Sesiones Recurrentes
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Form 3: Edit / Change Branch or Schedule of Specific Day */}
+          {/* Formulario Modificar Sede u Horario de Fecha Puntual */}
           {editingSchedule && (
             <form
               onSubmit={handleUpdateSchedule}
@@ -753,10 +883,10 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-purple-200">
                 <div>
                   <h3 className="font-bold text-[#3a1b38] text-sm">
-                    Modificar Sede u Horario de este Día
+                    Modificar Sede, Horario o Aforo
                   </h3>
                   <p className="text-[11px] text-charcoal-muted">
-                    Actualiza la sede, fecha o bloque horario y envía un aviso automático a los alumnos.
+                    Actualiza la sede, fecha, horario o cupo máximo y notifica a los alumnos.
                   </p>
                 </div>
                 <button
@@ -770,11 +900,11 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-semibold text-charcoal mb-1">Sede de la Sesión *</label>
+                  <label className="block font-semibold text-charcoal mb-1">Sede *</label>
                   <select
                     value={editBranchId}
                     onChange={(e) => setEditBranchId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   >
                     {branches.map((b) => (
                       <option key={b.id} value={b.id}>
@@ -819,7 +949,9 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-charcoal mb-1">Aforo Máximo</label>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Cantidad Máx. Alumnos
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -843,7 +975,9 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-charcoal mb-1">Destinatarios del Aviso</label>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Destinatarios del Aviso
+                  </label>
                   <select
                     value={editNotifyTarget}
                     onChange={(e) =>
@@ -851,20 +985,20 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                     }
                     className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   >
-                    <option value="ENROLLED">Solo alumnos inscritos en este día</option>
+                    <option value="ENROLLED">Solo alumnos inscritos</option>
                     <option value="ALL_CLIENTS">Aviso general a todos los alumnos</option>
                   </select>
                 </div>
 
                 <div className="sm:col-span-3">
                   <label className="block font-semibold text-charcoal mb-1">
-                    Mensaje o Motivo del Cambio (Se incluirá en la notificación)
+                    Motivo del Cambio (Se incluirá en la notificación)
                   </label>
                   <input
                     type="text"
                     value={editReason}
                     onChange={(e) => setEditReason(e.target.value)}
-                    placeholder="Ej. Por mantención se traslada esta sesión excepcionalmente a Sede Vitacura..."
+                    placeholder="Ej. Por mantención se traslada esta sesión excepcionalmente..."
                     className="w-full px-3 py-2 bg-white border border-sand-300 rounded-xl"
                   />
                 </div>
@@ -883,14 +1017,18 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-[#3a1b38] hover:bg-[#261025] text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BellRing className="w-3.5 h-3.5" />}
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <BellRing className="w-3.5 h-3.5" />
+                  )}
                   Guardar Cambios y Notificar
                 </button>
               </div>
             </form>
           )}
 
-          {/* Form 4: Cancel / Remove Specific Day with General or Enrolled Notification */}
+          {/* Formulario Suspender Día con Notificación */}
           {cancellingSchedule && (
             <form
               onSubmit={handleConfirmCancelSchedule}
@@ -899,10 +1037,17 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-red-200">
                 <div>
                   <h3 className="font-bold text-red-900 text-sm">
-                    Suspender / Eliminar Día de Clase ({new Date(cancellingSchedule.startTime).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' })})
+                    Suspender Día de Clase (
+                    {new Date(cancellingSchedule.startTime).toLocaleDateString('es-CL', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'short',
+                      timeZone: 'UTC',
+                    })}
+                    )
                   </h3>
                   <p className="text-[11px] text-red-800/80">
-                    Cancela este bloque puntual y deja una notificación a los alumnos.
+                    La clase quedará registrada como No Realizada / Cancelada en el Historial con este motivo.
                   </p>
                 </div>
                 <button
@@ -917,7 +1062,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-red-950 mb-1">
-                    Alcance del Aviso / Notificación *
+                    Alcance de la Notificación *
                   </label>
                   <select
                     value={cancelNotifyTarget}
@@ -929,15 +1074,13 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                     <option value="ALL_CLIENTS">
                       Notificación General a todos los alumnos activos
                     </option>
-                    <option value="ENROLLED">
-                      Solo a los alumnos inscritos en esta sesión
-                    </option>
+                    <option value="ENROLLED">Solo a los alumnos inscritos en esta fecha</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-semibold text-red-950 mb-1">
-                    Motivo para los Alumnos *
+                    Motivo de Cancelación *
                   </label>
                   <input
                     type="text"
@@ -963,150 +1106,215 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-                  Confirmar Suspensión y Notificar
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Ban className="w-3.5 h-3.5" />
+                  )}
+                  Confirmar Suspensión
                 </button>
               </div>
             </form>
           )}
 
-          {/* Schedules List */}
+          {/* ========================================================================= */}
+          {/* CONTENIDO SEGÚN MODO: 'BLOCKS' (BLOQUES SEMANALES) VS 'UPCOMING' (FECHAS) */}
+          {/* ========================================================================= */}
           {loading ? (
             <div className="flex items-center justify-center py-12 text-sage-600">
               <Loader2 className="w-7 h-7 animate-spin" />
             </div>
-          ) : filteredSchedules.length === 0 ? (
-            <div className="text-center py-12 text-charcoal-muted">
-              <Calendar className="w-10 h-10 mx-auto text-sage-400 mb-2" />
-              <p className="text-sm font-semibold text-charcoal">No hay sesiones para los filtros seleccionados</p>
-              <p className="text-xs mt-1">Crea nuevos horarios usando los botones superiores.</p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {filteredSchedules.map((sch) => {
-                const startHour = new Date(sch.startTime).getUTCHours();
-                const isMorning = startHour < 12;
-
-                return (
+          ) : mode === 'BLOCKS' ? (
+            /* MODO 1: ADMINISTRACIÓN -> GESTIÓN DE CLASES POR BLOQUES SEMANALES */
+            weeklyBlocks.length === 0 ? (
+              <div className="text-center py-12 text-charcoal-muted">
+                <CalendarPlus className="w-10 h-10 mx-auto text-sage-400 mb-2" />
+                <p className="text-sm font-semibold text-charcoal">
+                  No hay bloques semanales configurados para este filtro
+                </p>
+                <p className="text-xs mt-1">
+                  Usa el botón superior "+ Configurar Bloque Semanal (AM / PM)" para agregar tus días y horarios de clase.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {weeklyBlocks.map((block) => (
                   <div
-                    key={sch.id}
-                    className={`p-3.5 rounded-xl border transition flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                      sch.status === 'CANCELLED'
-                        ? 'border-stone-200 bg-stone-50/70 opacity-60'
-                        : 'border-sand-200 bg-sand-50/30 hover:bg-white hover:shadow-sm'
-                    }`}
+                    key={block.key}
+                    className="p-4 rounded-2xl border border-sand-200 bg-sand-50/40 hover:bg-white hover:shadow-sm transition flex flex-col justify-between gap-3"
                   >
-                    <div className="space-y-1.5 text-xs">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-sm text-sage-900">
-                          Sesión de Práctica · {sch.branch?.name || 'Sede Central'}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#3a1b38] text-white shadow-2xs">
+                            Clase {block.dayLabel} {block.amPm}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                              block.amPm === 'AM'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-purple-50 text-[#3a1b38] border-purple-200'
+                            }`}
+                          >
+                            {block.amPm === 'AM' ? 'Jornada Mañana' : 'Jornada Tarde'}
+                          </span>
+                        </div>
+                        <span className="font-bold text-xs text-sage-900 font-mono">
+                          {formatPrice(block.price)}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-[#3a1b38] border border-purple-200">
-                          {isMorning ? 'Horario AM' : 'Horario PM'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sage-100 text-sage-800 border border-sage-200">
-                          {sch.availableSlots} / {sch.capacity} cupos libres
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            sch.status === 'SCHEDULED'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : sch.status === 'IN_PROGRESS'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : sch.status === 'CANCELLED'
-                              ? 'bg-red-50 text-red-700 border-red-200'
-                              : 'bg-stone-100 text-stone-600 border-stone-200'
-                          }`}
-                        >
-                          {sch.status === 'SCHEDULED'
-                            ? 'PROGRAMADA'
-                            : sch.status === 'CANCELLED'
-                            ? 'SUSPENDIDA'
-                            : sch.status}
-                        </span>
-                        <span className="font-bold text-sage-800">{formatPrice(sch.price)}</span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal-muted">
-                        <div className="flex items-center gap-1 font-medium text-charcoal capitalize">
-                          <Calendar className="w-3.5 h-3.5 text-sage-600" />
-                          <span>
+                      <div className="space-y-1.5 pt-1 text-xs">
+                        <div className="flex items-center gap-2 text-charcoal font-bold text-sm">
+                          <MapPin className="w-4 h-4 text-[#d92676] shrink-0" />
+                          <span>{block.branchName}</span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal-muted">
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-charcoal">
+                            <Clock className="w-3.5 h-3.5 text-sage-600" />
+                            Horario: {block.startTimeStr} - {block.endTimeStr} hrs
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                            <Users className="w-3.5 h-3.5 text-emerald-600" />
+                            Máx. {block.capacity} alumnos
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2.5 border-t border-sand-200/80 flex items-center justify-between text-[11px] text-charcoal-muted">
+                      <span>
+                        {block.sessionsCount}{' '}
+                        {block.sessionsCount === 1
+                          ? 'fecha activa en agenda'
+                          : 'fechas activas en agenda'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditSchedule(block.sampleSchedule)}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-[#3a1b38] border border-purple-200 font-bold transition flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Ajustar Bloque</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            /* MODO 2: OPERACIÓN & AGENDA -> PRÓXIMAS CLASES (DÍAS POSTERIORES) */
+            upcomingSchedules.length === 0 ? (
+              <div className="text-center py-12 text-charcoal-muted">
+                <Calendar className="w-10 h-10 mx-auto text-sage-400 mb-2" />
+                <p className="text-sm font-semibold text-charcoal">
+                  No hay próximas clases programadas para los filtros seleccionados
+                </p>
+                <p className="text-xs mt-1">
+                  Las clases del día de hoy se gestionan directamente en "Asistencia & Check-in".
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {upcomingSchedules.map((sch) => {
+                  const startHour = new Date(sch.startTime).getUTCHours();
+                  const isMorning = startHour < 14;
+                  const enrolled = Math.max(0, sch.capacity - sch.availableSlots);
+
+                  return (
+                    <div
+                      key={sch.id}
+                      className="p-3.5 rounded-xl border border-sand-200 bg-sand-50/30 hover:bg-white hover:shadow-sm transition flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-sm text-sage-900 capitalize">
                             {new Date(sch.startTime).toLocaleDateString('es-CL', {
                               weekday: 'long',
                               day: 'numeric',
-                              month: 'short',
+                              month: 'long',
                               timeZone: 'UTC',
                             })}
                           </span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-[#3a1b38] border border-purple-200">
+                            {isMorning ? 'Bloque AM' : 'Bloque PM'}
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {enrolled} / {sch.capacity} alumnos inscritos
+                          </span>
+                          <span className="font-bold text-sage-800">{formatPrice(sch.price)}</span>
                         </div>
 
-                        <div className="flex items-center gap-1 font-medium text-charcoal">
-                          <Clock className="w-3.5 h-3.5 text-sage-600" />
-                          <span>
-                            {new Date(sch.startTime).toLocaleTimeString('es-CL', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            })}{' '}
-                            -{' '}
-                            {new Date(sch.endTime).toLocaleTimeString('es-CL', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              timeZone: 'UTC',
-                            })}{' '}
-                            hrs
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal-muted">
+                          <div className="flex items-center gap-1 font-semibold text-charcoal">
+                            <MapPin className="w-3.5 h-3.5 text-[#d92676]" />
+                            <span>{sch.branch?.name || 'Sede Central'}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1 font-medium text-charcoal">
+                            <Clock className="w-3.5 h-3.5 text-sage-600" />
+                            <span>
+                              {new Date(sch.startTime).toLocaleTimeString('es-CL', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                timeZone: 'UTC',
+                              })}{' '}
+                              -{' '}
+                              {new Date(sch.endTime).toLocaleTimeString('es-CL', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                timeZone: 'UTC',
+                              })}{' '}
+                              hrs
+                            </span>
+                          </div>
+
+                          <span className="text-[11px]">
+                            Máx. {sch.capacity} alumnos ({sch.availableSlots} libres)
                           </span>
                         </div>
+                      </div>
 
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#d92676]" />
-                          <span>{sch.branch?.name || 'Sede Central'}</span>
-                        </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+                        {onViewAttendees && (
+                          <button
+                            type="button"
+                            onClick={() => onViewAttendees(sch.id)}
+                            className="px-2.5 py-1.5 text-xs border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1 font-bold"
+                          >
+                            <UserIcon className="w-3 h-3 text-emerald-600" />
+                            <span>Ver Inscritos ({enrolled})</span>
+                          </button>
+                        )}
+
+                        {sch.status === 'SCHEDULED' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditSchedule(sch)}
+                              className="px-2.5 py-1.5 text-xs border border-purple-200 bg-purple-50 text-[#3a1b38] hover:bg-purple-100 rounded-lg transition flex items-center gap-1 font-semibold"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Reprogramar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCancelSchedule(sch)}
+                              className="px-2.5 py-1.5 text-xs border border-red-200 text-red-700 hover:bg-red-50 rounded-lg transition flex items-center gap-1 font-semibold"
+                            >
+                              <Ban className="w-3 h-3" />
+                              <span>Suspender Fecha</span>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-                      {onViewAttendees && (
-                        <button
-                          type="button"
-                          onClick={() => onViewAttendees(sch.id)}
-                          className="px-2.5 py-1 text-xs border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1 font-semibold shadow-xs"
-                          title="Ver listado de alumnos inscritos y control de asistencia"
-                        >
-                          <UserIcon className="w-3 h-3 text-emerald-600" />
-                          <span>Asistentes</span>
-                        </button>
-                      )}
-
-                      {sch.status === 'SCHEDULED' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditSchedule(sch)}
-                            className="px-2.5 py-1 text-xs border border-purple-200 bg-purple-50 text-[#3a1b38] hover:bg-purple-100 rounded-lg transition flex items-center gap-1 font-semibold"
-                            title="Cambiar sede, fecha u horario de este día"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                            <span>Cambiar Sede / Hora</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenCancelSchedule(sch)}
-                            className="px-2.5 py-1 text-xs border border-red-200 text-red-700 hover:bg-red-50 rounded-lg transition flex items-center gap-1 font-semibold"
-                            title="Suspender este día y enviar notificación"
-                          >
-                            <Ban className="w-3 h-3" />
-                            <span>Suspender Día</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       </div>

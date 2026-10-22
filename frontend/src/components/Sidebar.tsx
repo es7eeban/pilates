@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Calendar,
@@ -17,6 +17,10 @@ import {
   Zap,
   History,
   Settings,
+  ChevronDown,
+  ChevronRight,
+  CalendarClock,
+  FolderKanban,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/auth';
@@ -28,6 +32,7 @@ interface SidebarProps {
   onOpenMyBookings: () => void;
   onOpenClassHistory: () => void;
   onOpenAttendance: () => void;
+  onOpenUpcomingClasses?: () => void;
   onOpenAdminClasses: () => void;
   onOpenAdminBranches: () => void;
   onOpenAdminUsers: () => void;
@@ -35,6 +40,7 @@ interface SidebarProps {
   onOpenNotifications: () => void;
   onOpenAccount: () => void;
   unreadCount: number;
+  pendingVouchersCount?: number;
   offeredWaitlistCount?: number;
   activeView?: 'LANDING' | 'CATALOG';
   onSelectView?: (view: 'LANDING' | 'CATALOG') => void;
@@ -47,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenMyBookings,
   onOpenClassHistory,
   onOpenAttendance,
+  onOpenUpcomingClasses,
   onOpenAdminClasses,
   onOpenAdminBranches,
   onOpenAdminUsers,
@@ -54,11 +61,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenNotifications,
   onOpenAccount,
   unreadCount,
+  pendingVouchersCount = 0,
   offeredWaitlistCount = 0,
   activeView = 'CATALOG',
   onSelectView,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
+  const [classesSubmenuOpen, setClassesSubmenuOpen] = useState(true);
 
   const canAccessMenu = (menuKey: string): boolean => {
     if (!user) return false;
@@ -142,6 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* ========================================================================= */}
             {isAuthenticated && user?.role === 'ADMIN' ? (
               <>
+                {/* 1. OPERACIÓN & AGENDA */}
                 <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#7f747b]">
                   Operación & Agenda
                 </div>
@@ -160,80 +170,101 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 )}
 
-                {canAccessMenu('ADMIN_VOUCHERS') && (
-                  <button
-                    onClick={() => handleAction(onOpenAdminVouchers)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-terra bg-terra-light/70 hover:bg-terra hover:text-white border border-terra/30 transition text-left shadow-sm group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileCheck className="w-4 h-4 text-terra group-hover:text-white transition-colors" />
-                      <span>Validación de Pagos</span>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-terra text-white font-bold group-hover:bg-white group-hover:text-terra transition-colors">
-                      Vouchers
-                    </span>
-                  </button>
-                )}
+                {/* Submenú: Gestión de Clases (Asistencia del Día, Próximas Clases, Historial) */}
+                {(canAccessMenu('ATTENDANCE') || canAccessMenu('CLASS_HISTORY')) && (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setClassesSubmenuOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#220622] bg-white/80 hover:bg-white border border-[#e8e5df] transition text-left shadow-xs"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <FolderKanban className="w-4 h-4 text-[#3a1b38]" />
+                        <span>Gestión de Clases</span>
+                      </div>
+                      {classesSubmenuOpen ? (
+                        <ChevronDown className="w-3.5 h-3.5 text-[#7f747b]" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5 text-[#7f747b]" />
+                      )}
+                    </button>
 
-                {canAccessMenu('MY_BOOKINGS') && (
-                  <button
-                    onClick={() => handleAction(onOpenMyBookings)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-sm border border-transparent hover:border-[#e8e5df] transition text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <BookOpen className="w-4 h-4 text-sage-600" />
-                      <span>Reservas Activas</span>
-                    </div>
-                    {offeredWaitlistCount > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex items-center gap-0.5 animate-pulse">
-                        <Zap className="w-2.5 h-2.5" /> {offeredWaitlistCount}
-                      </span>
+                    {classesSubmenuOpen && (
+                      <div className="mt-1 ml-3 pl-2.5 border-l-2 border-[#e8e5df] space-y-1">
+                        {canAccessMenu('ATTENDANCE') && (
+                          <button
+                            onClick={() => handleAction(onOpenAttendance)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50/70 hover:bg-emerald-100/80 border border-emerald-200/70 transition text-left"
+                          >
+                            <ClipboardList className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>Asistencia & Check-in</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleAction(onOpenUpcomingClasses)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-xs border border-transparent hover:border-[#e8e5df] transition text-left"
+                        >
+                          <CalendarClock className="w-3.5 h-3.5 text-[#3a1b38] shrink-0" />
+                          <span>Próximas Clases</span>
+                        </button>
+
+                        {canAccessMenu('CLASS_HISTORY') && (
+                          <button
+                            onClick={() => handleAction(onOpenClassHistory)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-xs border border-transparent hover:border-[#e8e5df] transition text-left"
+                          >
+                            <History className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+                            <span>Historial de Clases</span>
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </button>
+                  </div>
                 )}
 
-                {canAccessMenu('CLASS_HISTORY') && (
-                  <button
-                    onClick={() => handleAction(onOpenClassHistory)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-sm border border-transparent hover:border-[#e8e5df] transition text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <History className="w-4 h-4 text-sage-600" />
-                      <span>Historial de Clases & Alumnos</span>
-                    </div>
-                  </button>
-                )}
-
-                {canAccessMenu('NOTIFICATIONS') && (
-                  <button
-                    onClick={() => handleAction(onOpenNotifications)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-sm border border-transparent hover:border-[#e8e5df] transition text-left"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Bell className="w-4 h-4 text-sage-600" />
-                      <span>Avisos & Notificaciones</span>
-                    </div>
-                    {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                )}
-
-                {canAccessMenu('ATTENDANCE') && (
-                  <button
-                    onClick={() => handleAction(onOpenAttendance)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-emerald-800 bg-emerald-50/60 hover:bg-emerald-100/80 border border-emerald-200/60 transition text-left shadow-sm"
-                  >
-                    <ClipboardList className="w-4 h-4 text-emerald-600" />
-                    <span>Asistencia & Check-in</span>
-                  </button>
-                )}
-
-                {/* Administración */}
+                {/* 2. NOTIFICACIONES */}
                 <div className="pt-3 space-y-1">
-                  <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-terra flex items-center gap-1">
+                  <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#7f747b]">
+                    Notificaciones
+                  </div>
+
+                  {canAccessMenu('ADMIN_VOUCHERS') && (
+                    <button
+                      onClick={() => handleAction(onOpenAdminVouchers)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-terra bg-terra-light/70 hover:bg-terra hover:text-white border border-terra/30 transition text-left shadow-sm group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileCheck className="w-4 h-4 text-terra group-hover:text-white transition-colors" />
+                        <span>Validación de Pagos</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-terra text-white font-bold group-hover:bg-white group-hover:text-terra transition-colors">
+                        {pendingVouchersCount > 0 ? pendingVouchersCount : 'Vouchers'}
+                      </span>
+                    </button>
+                  )}
+
+                  {canAccessMenu('NOTIFICATIONS') && (
+                    <button
+                      onClick={() => handleAction(onOpenNotifications)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-sm border border-transparent hover:border-[#e8e5df] transition text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Bell className="w-4 h-4 text-sage-600" />
+                        <span>Avisos & Notificaciones</span>
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* 3. ADMINISTRACIÓN */}
+                <div className="pt-3 space-y-1">
+                  <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-terra flex items-center gap-1">
                     <Shield className="w-3 h-3" />
                     Administración
                   </div>
@@ -244,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-[#4d444b] hover:bg-white hover:text-[#220622] hover:shadow-sm border border-transparent hover:border-[#e8e5df] transition text-left"
                     >
                       <CalendarPlus className="w-4 h-4 text-sage-600" />
-                      <span>Clases & Horarios</span>
+                      <span>Gestión de Clases & Horarios</span>
                     </button>
                   )}
 
@@ -269,10 +300,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </div>
 
-                {/* Cuenta */}
+                {/* 4. CONFIGURACIÓN */}
                 {canAccessMenu('ACCOUNT') && (
                   <div className="pt-3 space-y-1">
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#7f747b]">
+                    <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#7f747b]">
                       Configuración
                     </div>
                     <button
@@ -321,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         {offeredWaitlistCount > 0 && (
                           <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex items-center gap-0.5 animate-pulse">
-                            <Zap className="w-2.5 h-2.5" /> {offeredWaitlistCount}
+                            <Zap className="w-2.5 h-3.5" /> {offeredWaitlistCount}
                           </span>
                         )}
                       </button>

@@ -1,10 +1,13 @@
 import type { ClassSchedule, Booking, AttendanceStatus } from './schedule';
 
 export interface InstructorClassSchedule extends ClassSchedule {
+  bookings?: Booking[];
   stats?: {
     capacity: number;
     enrolled: number;
+    confirmed?: number;
     pendingValidation?: number;
+    unpaid?: number;
     availableSlots: number;
     attended: number;
     noShow: number;
@@ -18,6 +21,7 @@ export interface ClassRosterResponse {
   stats: {
     totalEnrolled: number;
     pendingValidationCount?: number;
+    unpaidCount?: number;
     attendedCount: number;
     noShowCount: number;
     excusedCount: number;

@@ -1,7 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
+  ClipboardList,
+  MapPin,
+  Users,
+  Search,
+  CheckCheck,
+  ArrowLeft,
+  RefreshCw,
+  Calendar,
+} from 'lucide-react';
 import { attendanceApi, branchesApi } from '../services/api';
 import type { InstructorClassSchedule, ClassRosterResponse } from '../types/attendance';
-import type { Branch, AttendanceStatus } from '../types/schedule';
+import type { Branch, AttendanceStatus, Booking } from '../types/schedule';
 import { useAuth } from '../context/AuthContext';
 
 interface AttendanceModalProps {
@@ -9,6 +23,7 @@ interface AttendanceModalProps {
   onClose: () => void;
   initialScheduleId?: string | null;
   refreshKey?: number;
+  onOpenHistory?: () => void;
 }
 
 export const AttendanceModal: React.FC<AttendanceModalProps> = ({
@@ -16,21 +31,22 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   onClose,
   initialScheduleId,
   refreshKey,
+  onOpenHistory,
 }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  // Estados generales
   const [classes, setClasses] = useState<InstructorClassSchedule[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   // Filtros
   const [selectedBranchId, setSelectedBranchId] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  // Por defecto, los administradores ven todas las clases del estudio
-  const [viewAllInstructors, setViewAllInstructors] = useState<boolean>(true);
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
 
   // Vista activa: 'CLASSES' | 'ROSTER'
   const [activeView, setActiveView] = useState<'CLASSES' | 'ROSTER'>('CLASSES');
@@ -43,61 +59,67 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Cargar sedes
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
   useEffect(() => {
     if (isOpen) {
       branchesApi.getAll().then(setBranches).catch(console.error);
+      setSuccessBanner(null);
+      if (!initialScheduleId) {
+        setSelectedDate(new Date().toISOString().slice(0, 10));
+        setActiveView('CLASSES');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, initialScheduleId]);
 
-  // Si el rol es admin, asegurar vista global por defecto
-  useEffect(() => {
-    if (isAdmin) {
-      setViewAllInstructors(true);
-    }
-  }, [isAdmin]);
-
-  // Cargar lista de clases
   const loadClasses = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await attendanceApi.getMyClasses({
         branchId: selectedBranchId !== 'ALL' ? selectedBranchId : undefined,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined,
-        all: isAdmin ? viewAllInstructors : false,
+        all: isAdmin ? true : false,
       });
       setClasses(data);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar las clases asignadas');
+      setError(err.message || 'Error al cargar las clases del día');
     } finally {
       setLoading(false);
     }
-  }, [selectedBranchId, statusFilter, viewAllInstructors, isAdmin]);
+  }, [selectedBranchId, isAdmin]);
 
-  // Cargar nómina de una clase
+  // Filtrar solo las clases de la fecha seleccionada (por defecto HOY) que aún están activas (no pasadas al historial como COMPLETED/CANCELLED)
+  const dayClasses = useMemo(() => {
+    return classes.filter((cls) => {
+      const clsDate = new Date(cls.startTime).toISOString().slice(0, 10);
+      if (clsDate !== selectedDate) return false;
+      // Las clases ya finalizadas ("COMPLETED") o canceladas pasan directamente al Historial
+      if (cls.status === 'COMPLETED' || cls.status === 'CANCELLED') return false;
+      return true;
+    });
+  }, [classes, selectedDate]);
+
   const handleOpenRoster = useCallback(async (scheduleId: string) => {
     try {
       setSelectedScheduleId(scheduleId);
       setActiveView('ROSTER');
       setRosterLoading(true);
       setError(null);
+      setSuccessBanner(null);
       const data = await attendanceApi.getClassRoster(scheduleId);
       setRosterData(data);
-      // Inicializar notas
       const notesMap: Record<string, string> = {};
       data.roster.forEach((b) => {
         notesMap[b.id] = b.attendanceNotes || '';
       });
       setEditingNotes(notesMap);
     } catch (err: any) {
-      setError(err.message || 'Error al obtener nómina de la clase');
+      setError(err.message || 'Error al obtener la lista de alumnos de la clase');
     } finally {
       setRosterLoading(false);
     }
   }, []);
 
-  // Manejar apertura inicial o cambios de refreshKey / initialScheduleId
   useEffect(() => {
     if (isOpen) {
       if (initialScheduleId) {
@@ -110,7 +132,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
   }, [isOpen, initialScheduleId, refreshKey, loadClasses, handleOpenRoster]);
 
-  // Refrescar manualmente la vista activa
   const handleRefreshCurrentView = async () => {
     if (activeView === 'CLASSES') {
       await loadClasses();
@@ -119,7 +140,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
   };
 
-  // Actualizar asistencia individual
+  // Actualizar asistencia individual (Presente / Ausente / Justificado)
   const handleUpdateAttendance = async (bookingId: string, status: AttendanceStatus) => {
     try {
       setActionLoading(`status-${bookingId}`);
@@ -129,17 +150,17 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         notes: notes || undefined,
       });
 
-      // Actualizar localmente la nómina
       if (rosterData) {
         const newRoster = rosterData.roster.map((b) =>
           b.id === bookingId ? { ...b, ...updatedBooking } : b,
         );
 
-        // Recalcular métricas
         const attendedCount = newRoster.filter((b) => b.attendanceStatus === 'ATTENDED').length;
         const noShowCount = newRoster.filter((b) => b.attendanceStatus === 'NO_SHOW').length;
         const excusedCount = newRoster.filter((b) => b.attendanceStatus === 'EXCUSED').length;
-        const pendingCount = newRoster.filter((b) => b.attendanceStatus === 'PENDING').length;
+        const pendingCount = newRoster.filter(
+          (b) => !b.attendanceStatus || b.attendanceStatus === 'PENDING',
+        ).length;
 
         setRosterData({
           ...rosterData,
@@ -154,13 +175,13 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         });
       }
     } catch (err: any) {
-      alert(`Error al actualizar asistencia: ${err.message}`);
+      setError(err.message || 'Error al actualizar asistencia');
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Guardar notas individuales
+  // Guardar observación individual
   const handleSaveNotes = async (bookingId: string, currentStatus?: AttendanceStatus) => {
     try {
       setActionLoading(`notes-${bookingId}`);
@@ -168,70 +189,98 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         attendanceStatus: currentStatus || 'PENDING',
         notes: editingNotes[bookingId] || '',
       });
-      alert('Nota guardada correctamente');
+      setSuccessBanner('Observación guardada para el alumno.');
     } catch (err: any) {
-      alert(`Error al guardar notas: ${err.message}`);
+      setError(err.message || 'Error al guardar nota');
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Marcar todos presentes (Bulk check-in)
+  // Marcar todos los inscritos como Presentes
   const handleMarkAllPresent = async () => {
-    if (!selectedScheduleId || !rosterData) return;
-    if (!confirm('¿Deseas marcar a todos los alumnos confirmados como Presentes (ATTENDED)?')) return;
+    if (!selectedScheduleId || !rosterData || rosterData.roster.length === 0) return;
 
     try {
       setActionLoading('bulk-all');
-      const attendees = rosterData.roster
-        .filter((b) => b.status === 'CONFIRMADA' || b.status === 'FINALIZADA')
-        .map((b) => ({
-          bookingId: b.id,
-          attendanceStatus: 'ATTENDED' as AttendanceStatus,
-          notes: editingNotes[b.id] || b.attendanceNotes || undefined,
-        }));
+      const attendees = rosterData.roster.map((b) => ({
+        bookingId: b.id,
+        attendanceStatus: 'ATTENDED' as AttendanceStatus,
+        notes: editingNotes[b.id] || b.attendanceNotes || undefined,
+      }));
 
       const refreshed = await attendanceApi.bulkAttendance(selectedScheduleId, attendees);
       setRosterData(refreshed);
+      setSuccessBanner('Todos los alumnos de la clase fueron marcados como Presentes.');
     } catch (err: any) {
-      alert(`Error en check-in masivo: ${err.message}`);
+      setError(err.message || 'Error al marcar asistencia masiva');
     } finally {
       setActionLoading(null);
     }
   };
 
-  // Actualizar estado de la clase (Iniciar o Finalizar)
-  const handleUpdateScheduleStatus = async (
-    scheduleId: string,
-    newStatus: 'IN_PROGRESS' | 'COMPLETED',
-  ) => {
-    const actionText = newStatus === 'IN_PROGRESS' ? 'iniciar la clase' : 'finalizar la clase';
-    if (!confirm(`¿Confirmas que deseas ${actionText}?`)) return;
-
+  // Marcar la clase como "Clase Realizada" -> Guarda asistencia y pasa al Historial
+  const handleCompleteClass = async (scheduleId: string) => {
     try {
-      setActionLoading(`class-status-${scheduleId}`);
-      const updated = await attendanceApi.updateScheduleStatus(scheduleId, newStatus);
+      setActionLoading(`complete-${scheduleId}`);
+      setError(null);
 
-      // Si estamos en la vista de nómina, refrescar schedule
-      if (rosterData && rosterData.schedule.id === scheduleId) {
-        setRosterData({
-          ...rosterData,
-          schedule: {
-            ...rosterData.schedule,
-            status: updated.status,
-          },
-        });
+      // Si estamos dentro de la nómina y hay notas editadas, persistir el estado actual de los alumnos
+      if (rosterData && rosterData.schedule.id === scheduleId && rosterData.roster.length > 0) {
+        const attendeesPayload = rosterData.roster.map((b) => ({
+          bookingId: b.id,
+          attendanceStatus: (b.attendanceStatus || 'PENDING') as AttendanceStatus,
+          notes: editingNotes[b.id] ?? b.attendanceNotes ?? undefined,
+        }));
+        await attendanceApi.bulkAttendance(scheduleId, attendeesPayload);
       }
 
-      // Si estamos en la vista de clases, refrescar lista
-      setClasses((prev) =>
-        prev.map((c) => (c.id === scheduleId ? { ...c, status: updated.status } : c)),
+      await attendanceApi.updateScheduleStatus(scheduleId, 'COMPLETED');
+
+      setSuccessBanner(
+        '✅ Clase marcada como Realizada. Se ha guardado la asistencia y se envió al Historial de Clases.',
       );
+      setActiveView('CLASSES');
+      setSelectedScheduleId(null);
+      setRosterData(null);
+      await loadClasses();
     } catch (err: any) {
-      alert(`Error al cambiar estado de la clase: ${err.message}`);
+      setError(err.message || 'Error al finalizar y guardar la clase');
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // Renderizador del Badge de Estado de Pago de cada alumno
+  const getPaymentStatusBadge = (booking: Booking) => {
+    if (
+      booking.status === 'CONFIRMADA' ||
+      booking.status === 'FINALIZADA' ||
+      booking.payment?.status === 'APPROVED'
+    ) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          Pago Aceptado
+        </span>
+      );
+    }
+
+    if (booking.status === 'PENDIENTE_VALIDACION') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+          <Clock className="w-3 h-3 text-amber-600" />
+          Pago en Revisión
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-300">
+        <XCircle className="w-3 h-3 text-red-600" />
+        No Pagado
+      </span>
+    );
   };
 
   if (!isOpen) return null;
@@ -244,6 +293,21 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     return name.includes(q) || email.includes(q) || code.includes(q);
   });
 
+  const formatTimeUTC = (isoString: string) =>
+    new Date(isoString).toLocaleTimeString('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    });
+
+  const formatDateUTC = (isoString: string) =>
+    new Date(isoString).toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
       <div
@@ -251,35 +315,37 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Encabezado */}
-        <div className="px-6 py-5 bg-stone-900 text-white flex items-center justify-between border-b border-stone-800">
-          <div className="flex items-center space-x-3">
-            <span className="p-2.5 bg-emerald-700/60 rounded-xl text-xl">📋</span>
+        <div className="px-6 py-5 bg-[#220622] text-white flex items-center justify-between border-b border-[#3a1b38]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+              <ClipboardList className="w-5 h-5" />
+            </div>
             <div>
-              <h2 className="text-xl font-serif font-medium tracking-tight">
+              <h2 className="text-lg font-bold tracking-tight">
                 {activeView === 'CLASSES'
-                  ? 'Panel de Clases & Control de Asistencia'
-                  : 'Nómina de Asistencia en Sala'}
+                  ? 'Asistencia & Check-in · Clases del Día'
+                  : 'Control de Asistencia y Estado de Pago en Sala'}
               </h2>
-              <p className="text-xs text-stone-300">
+              <p className="text-xs text-rose-100/80">
                 {activeView === 'CLASSES'
-                  ? 'Gestiona tus sesiones asignadas, aforo e inicia la toma de asistencia'
-                  : 'Check-in en tiempo real, registro de novedades y contacto con alumnos'}
+                  ? 'Abre una clase del día para pasar lista, verificar estado de pago y marcarla como Clase Realizada'
+                  : 'Marca a cada alumno como Presente o Ausente, verifica su pago y finaliza la sesión para enviarla al Historial'}
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleRefreshCurrentView}
               disabled={loading || rosterLoading}
-              className="text-stone-300 hover:text-white px-3 py-1.5 rounded-xl hover:bg-stone-800 transition flex items-center gap-1.5 text-xs font-semibold bg-stone-800/80 border border-stone-700 shadow-sm"
-              title="Actualizar listado de clases y nómina"
+              className="text-rose-100 hover:text-white px-3 py-1.5 rounded-xl hover:bg-white/10 transition flex items-center gap-1.5 text-xs font-semibold bg-white/10 border border-white/15"
+              title="Actualizar"
             >
-              <span className={`text-xs ${loading || rosterLoading ? 'animate-spin' : ''}`}>🔄</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading || rosterLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
             <button
               onClick={onClose}
-              className="text-stone-400 hover:text-white p-2 rounded-lg hover:bg-stone-800 transition"
+              className="text-rose-200 hover:text-white p-2 rounded-lg hover:bg-white/10 transition"
             >
               ✕
             </button>
@@ -287,32 +353,83 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         </div>
 
         {/* Cuerpo del Modal */}
-        <div className="flex-1 overflow-y-auto p-6 bg-stone-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-stone-50 space-y-4">
           {error && (
-            <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
-              <span>{error}</span>
-              <button
-                onClick={() => setError(null)}
-                className="text-red-500 font-bold ml-3"
-              >
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+              <button onClick={() => setError(null)} className="text-red-500 font-bold ml-3">
                 ✕
               </button>
             </div>
           )}
 
-          {/* VISTA 1: LISTADO DE CLASES */}
+          {successBanner && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{successBanner}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {onOpenHistory && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenHistory();
+                    }}
+                    className="px-3 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition"
+                  >
+                    Ver en Historial →
+                  </button>
+                )}
+                <button
+                  onClick={() => setSuccessBanner(null)}
+                  className="text-emerald-700 font-bold ml-1"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA 1: CLASES DEL DÍA */}
           {activeView === 'CLASSES' && (
-            <div className="space-y-6">
-              {/* Barra de Filtros */}
+            <div className="space-y-5">
+              {/* Barra de Filtros del Día */}
               <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
+                  {/* Selector de Fecha (Por defecto Hoy) */}
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#3a1b38]" />
+                    <span className="text-xs font-bold text-stone-700">Fecha de Asistencia:</span>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value || todayIso)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-stone-300 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#3a1b38]"
+                    />
+                    {selectedDate !== todayIso && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate(todayIso)}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-purple-50 text-[#3a1b38] border border-purple-200 hover:bg-purple-100 transition"
+                      >
+                        Volver a Hoy
+                      </button>
+                    )}
+                  </div>
+
                   {/* Filtro Sede */}
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-sage-600" />
                     <span className="text-xs font-semibold text-stone-600">Sede:</span>
                     <select
                       value={selectedBranchId}
                       onChange={(e) => setSelectedBranchId(e.target.value)}
-                      className="px-3 py-1.5 text-xs rounded-xl border border-stone-300 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                      className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-stone-300 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#3a1b38]"
                     >
                       <option value="ALL">Todas las sedes</option>
                       {branches.map((b) => (
@@ -322,79 +439,51 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                       ))}
                     </select>
                   </div>
-
-                  {/* Filtro Estado */}
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-semibold text-stone-600">Estado:</span>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-1.5 text-xs rounded-xl border border-stone-300 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                    >
-                      <option value="ALL">Todos los estados</option>
-                      <option value="SCHEDULED">Programadas</option>
-                      <option value="IN_PROGRESS">En Curso</option>
-                      <option value="COMPLETED">Finalizadas</option>
-                    </select>
-                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* Filtro Admin: Ver todas las clases */}
-                  {isAdmin && (
-                    <div className="flex items-center space-x-2 bg-stone-100 px-3 py-1.5 rounded-xl border border-stone-200">
-                      <input
-                        type="checkbox"
-                        id="viewAllToggle"
-                        checked={viewAllInstructors}
-                        onChange={(e) => setViewAllInstructors(e.target.checked)}
-                        className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                      />
-                      <label
-                        htmlFor="viewAllToggle"
-                        className="text-xs font-medium text-stone-700 cursor-pointer select-none"
-                      >
-                        👑 Modo Admin (Ver todas las clases)
-                      </label>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={loadClasses}
-                    disabled={loading}
-                    className="p-2 text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-xl transition text-xs flex items-center gap-1 font-semibold"
-                    title="Recargar clases"
-                  >
-                    <span className={loading ? 'animate-spin' : ''}>🔄</span>
-                    <span className="hidden sm:inline">Refrescar</span>
-                  </button>
-                </div>
+                <span className="text-xs font-bold text-[#3a1b38] bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200">
+                  {selectedDate === todayIso ? '📅 Mostrando Clases de Hoy' : `📅 Fecha: ${selectedDate}`}
+                </span>
               </div>
 
-              {/* Lista de Tarjetas de Clases */}
+              {/* Lista de Clases del Día */}
               {loading ? (
                 <div className="py-16 text-center text-stone-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-3"></div>
-                  <p className="text-sm">Cargando sesiones asignadas...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3a1b38] mx-auto mb-3" />
+                  <p className="text-sm">Cargando clases del día...</p>
                 </div>
-              ) : classes.length === 0 ? (
-                <div className="py-16 text-center bg-white rounded-2xl border border-stone-200">
-                  <span className="text-4xl block mb-2">🧘‍♀️</span>
-                  <h3 className="text-base font-serif font-medium text-stone-800">
-                    No se encontraron clases para los filtros seleccionados
+              ) : dayClasses.length === 0 ? (
+                <div className="py-14 text-center bg-white rounded-2xl border border-stone-200 p-6">
+                  <ClipboardList className="w-10 h-10 text-stone-300 mx-auto mb-2" />
+                  <h3 className="text-base font-bold text-stone-800">
+                    No hay clases pendientes de realizar en esta fecha ({selectedDate})
                   </h3>
-                  <p className="text-xs text-stone-500 mt-1">
-                    Prueba cambiando la sede seleccionada o limpiando los filtros.
+                  <p className="text-xs text-stone-500 mt-1 max-w-md mx-auto">
+                    Las clases que ya fueron marcadas como "Clase Realizada" se encuentran archivadas en el módulo de Historial de Clases.
                   </p>
+                  {onOpenHistory && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenHistory();
+                      }}
+                      className="mt-4 px-4 py-2 text-xs font-bold bg-[#3a1b38] hover:bg-[#4f244c] text-white rounded-xl transition"
+                    >
+                      Ir al Historial de Clases
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {classes.map((cls) => {
-                    const startDate = new Date(cls.startTime);
-                    const endDate = new Date(cls.endTime);
+                  {dayClasses.map((cls) => {
                     const enrolled = cls.stats?.enrolled || 0;
                     const attended = cls.stats?.attended || 0;
+                    const noShow = cls.stats?.noShow || 0;
+                    const pendingValidation = cls.stats?.pendingValidation || 0;
+                    const unpaid = cls.stats?.unpaid || 0;
                     const capacity = cls.capacity;
+                    const hour = new Date(cls.startTime).getUTCHours();
 
                     return (
                       <div
@@ -402,127 +491,100 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
                       >
                         <div>
-                          {/* Encabezado de la tarjeta */}
+                          {/* Cabecera de la tarjeta */}
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-[#3a1b38] border border-purple-200">
                                   📍 {cls.branch?.name || 'Sede Principal'}
                                 </span>
-                                {cls.status === 'SCHEDULED' && (
-                                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                                    Programada
-                                  </span>
-                                )}
-                                {cls.status === 'IN_PROGRESS' && (
-                                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
-                                    <span className="relative flex h-2 w-2">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    En Curso
-                                  </span>
-                                )}
-                                {cls.status === 'COMPLETED' && (
-                                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 font-medium">
-                                    Finalizada
-                                  </span>
-                                )}
+                                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sand-100 text-charcoal">
+                                  {hour < 14 ? 'Bloque AM' : 'Bloque PM'}
+                                </span>
                               </div>
-                              <h3 className="text-base font-serif font-medium text-stone-900 mt-1.5">
+                              <h3 className="text-base font-bold text-stone-900 mt-2">
                                 {cls.classType.title}
                               </h3>
+                              <p className="text-xs text-stone-500 capitalize mt-0.5">
+                                {formatDateUTC(cls.startTime)}
+                              </p>
                             </div>
 
                             <div className="text-right">
-                              <span className="text-lg font-serif font-bold text-stone-800">
-                                {startDate.toLocaleTimeString('es-CL', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                              <span className="block text-[11px] text-stone-400">
-                                Hasta {endDate.toLocaleTimeString('es-CL', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                              <span className="text-base font-bold font-mono text-[#3a1b38] bg-purple-50 px-2.5 py-1 rounded-xl border border-purple-200 block">
+                                {formatTimeUTC(cls.startTime)} - {formatTimeUTC(cls.endTime)}
                               </span>
                             </div>
                           </div>
 
-                          {/* Fecha e Instructor */}
-                          <div className="text-xs text-stone-500 mb-3 space-y-1">
-                            <p>
-                              🗓️{' '}
-                              {startDate.toLocaleDateString('es-CL', {
-                                weekday: 'long',
-                                day: 'numeric',
-                                month: 'short',
-                              })}
-                            </p>
-                            {isAdmin && (
-                              <p>
-                                👤 Instructor:{' '}
-                                <span className="font-medium text-stone-700">
-                                  {cls.instructor?.name || 'Sin asignar'}
-                                </span>
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Barra de Aforo e Inscriptos */}
-                          <div className="bg-stone-50 rounded-xl p-3 border border-stone-100 mb-4">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="font-medium text-stone-600">Alumnos inscritos:</span>
+                          {/* Resumen de Alumnos y Estado de Pagos */}
+                          <div className="bg-stone-50 rounded-xl p-3.5 border border-stone-200/80 mb-4 space-y-2">
+                            <div className="flex justify-between text-xs">
+                              <span className="font-semibold text-stone-600 flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5 text-[#3a1b38]" /> Alumnos agendados:
+                              </span>
                               <span className="font-bold text-stone-900">
                                 {enrolled} / {capacity} cupos
                               </span>
                             </div>
                             <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
                               <div
-                                className="bg-emerald-600 h-full rounded-full transition-all duration-300"
+                                className="bg-[#3a1b38] h-full rounded-full transition-all duration-300"
                                 style={{ width: `${Math.min(100, (enrolled / capacity) * 100)}%` }}
                               />
                             </div>
-                            <div className="flex items-center justify-between text-[11px] text-stone-500 mt-2">
-                              <span>✅ Asistieron: <strong className="text-emerald-700">{attended}</strong></span>
-                              <span>⏳ Pendientes: <strong className="text-amber-600">{enrolled - attended}</strong></span>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-600 pt-1">
+                              <span>
+                                ✅ Presentes: <strong className="text-emerald-700">{attended}</strong>
+                              </span>
+                              <span>
+                                ❌ Ausentes: <strong className="text-rose-700">{noShow}</strong>
+                              </span>
+                              <span>
+                                ⏳ Sin marcar:{' '}
+                                <strong className="text-stone-800">
+                                  {Math.max(0, enrolled - attended - noShow)}
+                                </strong>
+                              </span>
                             </div>
-                            {cls.stats?.pendingValidation && cls.stats.pendingValidation > 0 ? (
-                              <div className="mt-2 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center justify-between">
-                                <span>⚠️ Comprobantes por validar:</span>
-                                <strong>{cls.stats.pendingValidation} alumno(s)</strong>
+
+                            {(pendingValidation > 0 || unpaid > 0) && (
+                              <div className="pt-2 border-t border-stone-200 flex flex-wrap items-center gap-2 text-[11px]">
+                                {pendingValidation > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold">
+                                    🟡 {pendingValidation} pago(s) en revisión
+                                  </span>
+                                )}
+                                {unpaid > 0 && (
+                                  <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-semibold">
+                                    🔴 {unpaid} no pagado(s)
+                                  </span>
+                                )}
                               </div>
-                            ) : null}
+                            )}
                           </div>
                         </div>
 
-                        {/* Botones de Acción de la Clase */}
+                        {/* Botones de Acción (Sin botón "Iniciar Clase") */}
                         <div className="flex items-center gap-2 pt-2 border-t border-stone-100">
-                          {cls.status === 'SCHEDULED' && (
-                            <button
-                              onClick={() => handleUpdateScheduleStatus(cls.id, 'IN_PROGRESS')}
-                              disabled={actionLoading === `class-status-${cls.id}`}
-                              className="px-3 py-2 text-xs rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium border border-emerald-200 transition"
-                            >
-                              ▶️ Iniciar
-                            </button>
-                          )}
-                          {cls.status === 'IN_PROGRESS' && (
-                            <button
-                              onClick={() => handleUpdateScheduleStatus(cls.id, 'COMPLETED')}
-                              disabled={actionLoading === `class-status-${cls.id}`}
-                              className="px-3 py-2 text-xs rounded-xl bg-stone-800 text-white hover:bg-stone-900 font-medium transition"
-                            >
-                              🏁 Finalizar
-                            </button>
-                          )}
                           <button
+                            type="button"
                             onClick={() => handleOpenRoster(cls.id)}
-                            className="flex-1 py-2 px-3 text-xs rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm transition flex items-center justify-center gap-1.5"
+                            className="flex-1 py-2.5 px-3 text-xs rounded-xl bg-[#3a1b38] hover:bg-[#4f244c] text-white font-bold shadow-sm transition flex items-center justify-center gap-1.5"
                           >
-                            <span>📋</span>
-                            <span>Ver Nómina & Asistencia</span>
+                            <ClipboardList className="w-4 h-4" />
+                            <span>Abrir Clase & Pasar Lista ({enrolled})</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCompleteClass(cls.id)}
+                            disabled={actionLoading === `complete-${cls.id}`}
+                            className="py-2.5 px-3.5 text-xs rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                            title="Marcar clase como realizada y enviarla al historial"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Clase Realizada</span>
                           </button>
                         </div>
                       </div>
@@ -533,67 +595,45 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
             </div>
           )}
 
-          {/* VISTA 2: NÓMINA DE ALUMNOS (ROSTER) */}
+          {/* VISTA 2: NÓMINA DE ALUMNOS Y PAGOS DE LA CLASE */}
           {activeView === 'ROSTER' && (
-            <div className="space-y-6">
-              {/* Encabezado Superior de Navegación de Nómina */}
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
+            <div className="space-y-5">
+              {/* Barra Superior de Navegación y Finalización */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={() => {
                       setActiveView('CLASSES');
                       loadClasses();
                     }}
-                    className="inline-flex items-center space-x-1.5 text-xs font-medium text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3.5 py-2 rounded-xl transition"
                   >
-                    <span>←</span>
-                    <span>Volver a mis clases</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (selectedScheduleId) handleOpenRoster(selectedScheduleId);
-                    }}
-                    disabled={rosterLoading}
-                    className="inline-flex items-center space-x-1 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-2 rounded-xl transition"
-                    title="Recargar nómina de alumnos"
-                  >
-                    <span className={rosterLoading ? 'animate-spin' : ''}>🔄</span>
-                    <span className="hidden sm:inline">Refrescar</span>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Volver a Clases del Día</span>
                   </button>
                 </div>
 
                 {rosterData && (
-                  <div className="flex items-center gap-2">
-                    {rosterData.schedule.status === 'SCHEDULED' && (
-                      <button
-                        onClick={() =>
-                          handleUpdateScheduleStatus(rosterData.schedule.id, 'IN_PROGRESS')
-                        }
-                        disabled={actionLoading === `class-status-${rosterData.schedule.id}`}
-                        className="px-3 py-2 text-xs rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition"
-                      >
-                        ▶️ Iniciar Clase
-                      </button>
-                    )}
-                    {rosterData.schedule.status === 'IN_PROGRESS' && (
-                      <button
-                        onClick={() =>
-                          handleUpdateScheduleStatus(rosterData.schedule.id, 'COMPLETED')
-                        }
-                        disabled={actionLoading === `class-status-${rosterData.schedule.id}`}
-                        className="px-3 py-2 text-xs rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-medium transition"
-                      >
-                        🏁 Finalizar Clase
-                      </button>
-                    )}
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
+                      type="button"
                       onClick={handleMarkAllPresent}
                       disabled={actionLoading === 'bulk-all' || rosterData.roster.length === 0}
-                      className="px-3.5 py-2 text-xs rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold border border-emerald-300 transition flex items-center gap-1.5"
+                      className="px-3.5 py-2 text-xs rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 transition flex items-center gap-1.5 disabled:opacity-50"
                     >
-                      <span>⚡</span>
+                      <CheckCheck className="w-4 h-4 text-emerald-600" />
                       <span>Marcar Todos Presentes</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteClass(rosterData.schedule.id)}
+                      disabled={actionLoading === `complete-${rosterData.schedule.id}`}
+                      className="px-4 py-2 text-xs rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>✅ Clase Realizada (Guardar y Enviar a Historial)</span>
                     </button>
                   </div>
                 )}
@@ -601,110 +641,93 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
               {rosterLoading ? (
                 <div className="py-20 text-center text-stone-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-3"></div>
-                  <p className="text-sm">Cargando nómina de alumnos...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3a1b38] mx-auto mb-3" />
+                  <p className="text-sm">Cargando alumnos de la clase...</p>
                 </div>
               ) : !rosterData ? (
                 <div className="py-12 text-center text-stone-500">
-                  No se encontró información de la nómina.
+                  No se encontró información de la clase seleccionada.
                 </div>
               ) : (
                 <>
-                  {/* Banner con Detalles de la Clase */}
-                  <div className="bg-emerald-900 text-white p-5 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-4">
+                  {/* Resumen de la Clase */}
+                  <div className="bg-gradient-to-r from-[#261025] to-[#3a1b38] text-white p-5 rounded-2xl shadow-md flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center space-x-2 text-emerald-200 text-xs mb-1">
-                        <span>📍 {rosterData.schedule.branch?.name}</span>
+                      <div className="flex items-center gap-2 text-rose-200 text-xs mb-1 capitalize">
+                        <span>📍 {rosterData.schedule.branch?.name || 'Sede Central'}</span>
                         <span>•</span>
-                        <span>
-                          {new Date(rosterData.schedule.startTime).toLocaleDateString('es-CL', {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                          })}
-                        </span>
+                        <span>{formatDateUTC(rosterData.schedule.startTime)}</span>
                       </div>
-                      <h3 className="text-xl font-serif font-medium">
-                        {rosterData.schedule.classType.title}
-                      </h3>
-                      <p className="text-xs text-emerald-200 mt-1">
-                        ⏰ Horario:{' '}
-                        {new Date(rosterData.schedule.startTime).toLocaleTimeString('es-CL', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}{' '}
-                        -{' '}
-                        {new Date(rosterData.schedule.endTime).toLocaleTimeString('es-CL', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}{' '}
-                        | Instructor: {rosterData.schedule.instructor?.name}
+                      <h3 className="text-lg font-bold">{rosterData.schedule.classType.title}</h3>
+                      <p className="text-xs text-rose-100/90 mt-1">
+                        ⏰ Horario: {formatTimeUTC(rosterData.schedule.startTime)} -{' '}
+                        {formatTimeUTC(rosterData.schedule.endTime)} hrs · Instructor:{' '}
+                        {rosterData.schedule.instructor?.name || user?.name}
                       </p>
                     </div>
 
-                    {/* Tarjetas de Métricas Rápidas */}
                     <div className="flex items-center gap-2">
-                      <div className="bg-emerald-800/80 px-3 py-2 rounded-xl text-center min-w-[70px]">
-                        <span className="block text-xl font-bold font-serif">
+                      <div className="bg-white/10 px-3 py-2 rounded-xl text-center min-w-[72px] border border-white/15">
+                        <span className="block text-lg font-bold">
                           {rosterData.stats.totalEnrolled}
                         </span>
-                        <span className="text-[10px] text-emerald-200 uppercase font-medium">
-                          Inscritos
+                        <span className="text-[10px] text-rose-100 uppercase font-semibold">
+                          Alumnos
                         </span>
                       </div>
-                      <div className="bg-emerald-700 px-3 py-2 rounded-xl text-center min-w-[70px] border border-emerald-500">
-                        <span className="block text-xl font-bold font-serif text-white">
+                      <div className="bg-emerald-600/40 px-3 py-2 rounded-xl text-center min-w-[72px] border border-emerald-400/50">
+                        <span className="block text-lg font-bold text-white">
                           {rosterData.stats.attendedCount}
                         </span>
-                        <span className="text-[10px] text-emerald-100 uppercase font-medium">
+                        <span className="text-[10px] text-emerald-100 uppercase font-semibold">
                           Presentes
                         </span>
                       </div>
-                      <div className="bg-rose-900/80 px-3 py-2 rounded-xl text-center min-w-[70px]">
-                        <span className="block text-xl font-bold font-serif text-rose-200">
+                      <div className="bg-rose-600/40 px-3 py-2 rounded-xl text-center min-w-[72px] border border-rose-400/50">
+                        <span className="block text-lg font-bold text-white">
                           {rosterData.stats.noShowCount}
                         </span>
-                        <span className="text-[10px] text-rose-200 uppercase font-medium">
+                        <span className="text-[10px] text-rose-100 uppercase font-semibold">
                           Ausentes
-                        </span>
-                      </div>
-                      <div className="bg-stone-800/80 px-3 py-2 rounded-xl text-center min-w-[70px]">
-                        <span className="block text-xl font-bold font-serif text-stone-200">
-                          {rosterData.stats.pendingCount}
-                        </span>
-                        <span className="text-[10px] text-stone-300 uppercase font-medium">
-                          Pendientes
                         </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Buscador de alumnos */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="relative w-full max-w-xs">
+                      <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
-                        placeholder="Buscar alumno o código..."
+                        placeholder="Buscar alumno por nombre, correo o código..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                        className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-stone-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#3a1b38]"
                       />
-                      <span className="absolute left-3 top-2.5 text-stone-400 text-xs">🔍</span>
                     </div>
-                    <span className="text-xs text-stone-500">
-                      Mostrando {filteredRoster?.length || 0} de {rosterData.roster.length} alumnos
-                    </span>
+                    <div className="flex items-center gap-2 text-[11px] text-stone-600">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Pago Aceptado
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" /> En Revisión
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500" /> No Pagado
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Listado de Alumnos */}
+                  {/* Listado de Alumnos con Presente/Ausente + Estado de Pago */}
                   {filteredRoster && filteredRoster.length === 0 ? (
                     <div className="py-12 text-center bg-white rounded-2xl border border-stone-200">
-                      <span className="text-3xl block mb-2">👤</span>
-                      <p className="text-sm font-medium text-stone-700">
-                        No hay alumnos registrados en esta clase
+                      <Users className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-stone-700">
+                        No hay alumnos inscritos en esta clase
                       </p>
                       <p className="text-xs text-stone-500 mt-1">
-                        Los alumnos aparecerán aquí cuando confirmen su reserva.
+                        Aún puedes marcar la clase como realizada o suspenderla si no hubo inscritos.
                       </p>
                     </div>
                   ) : (
@@ -713,147 +736,120 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         const isAttended = booking.attendanceStatus === 'ATTENDED';
                         const isNoShow = booking.attendanceStatus === 'NO_SHOW';
                         const isExcused = booking.attendanceStatus === 'EXCUSED';
-                        const isPending = !booking.attendanceStatus || booking.attendanceStatus === 'PENDING';
-
-                        const phoneClean = booking.user?.phone?.replace(/\D/g, '') || '';
 
                         return (
                           <div
                             key={booking.id}
                             className={`p-4 rounded-2xl border transition-all ${
                               isAttended
-                                ? 'bg-emerald-50/70 border-emerald-200 shadow-sm'
+                                ? 'bg-emerald-50/70 border-emerald-300 shadow-xs'
                                 : isNoShow
-                                ? 'bg-rose-50/70 border-rose-200'
+                                ? 'bg-rose-50/60 border-rose-200'
                                 : isExcused
-                                ? 'bg-amber-50/70 border-amber-200'
+                                ? 'bg-amber-50/60 border-amber-200'
                                 : 'bg-white border-stone-200'
                             }`}
                           >
                             <div className="flex flex-wrap items-center justify-between gap-4">
-                              {/* Información del Alumno */}
-                              <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-sm">
+                              {/* Datos del Alumno + Estado de Pago */}
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[#3a1b38] text-white flex items-center justify-center font-bold text-sm shrink-0">
                                   {booking.user?.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h4 className="text-sm font-serif font-medium text-stone-900">
+                                    <h4 className="text-sm font-bold text-stone-900">
                                       {booking.user?.name}
                                     </h4>
-                                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-semibold">
+                                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-semibold border border-stone-200">
                                       {booking.bookingCode}
                                     </span>
-                                    {booking.status === 'PENDIENTE_VALIDACION' && (
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
-                                        <span>⚠️</span> Por Validar
-                                      </span>
-                                    )}
-                                    {booking.status === 'CONFIRMADA' && (
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                        Confirmada
-                                      </span>
-                                    )}
-                                    {booking.status === 'FINALIZADA' && (
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
-                                        Finalizada
-                                      </span>
-                                    )}
+                                    {/* Estado de Pago requerido: Aceptado, En Revisión o No Pagado */}
+                                    {getPaymentStatusBadge(booking)}
                                   </div>
-                                  <div className="flex items-center space-x-3 text-xs text-stone-500 mt-0.5">
+                                  <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500 mt-1">
                                     <span>✉️ {booking.user?.email}</span>
-                                    {booking.user?.phone && (
-                                      <a
-                                        href={`https://wa.me/${phoneClean}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center space-x-1 text-emerald-700 hover:text-emerald-800 font-medium"
-                                        title="Escribir por WhatsApp"
-                                      >
-                                        <span>💬 {booking.user.phone}</span>
-                                      </a>
-                                    )}
+                                    {booking.user?.phone && <span>📞 {booking.user.phone}</span>}
+                                    <span className="text-[11px] font-medium text-stone-600">
+                                      Método:{' '}
+                                      {booking.paymentMethod === 'TRANSFER'
+                                        ? 'Transferencia'
+                                        : 'Pago Online'}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Botones de Acción de Asistencia 1-Click */}
+                              {/* Botones de Asistencia: Presente / No Presente (Ausente) / Justificado */}
                               <div className="flex items-center gap-1.5">
                                 <button
+                                  type="button"
                                   onClick={() => handleUpdateAttendance(booking.id, 'ATTENDED')}
                                   disabled={actionLoading === `status-${booking.id}`}
-                                  className={`px-3 py-1.5 text-xs rounded-xl font-medium transition flex items-center gap-1 ${
+                                  className={`px-3.5 py-2 text-xs rounded-xl font-bold transition flex items-center gap-1.5 ${
                                     isAttended
                                       ? 'bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-500 ring-offset-1'
                                       : 'bg-stone-100 text-stone-700 hover:bg-emerald-100 hover:text-emerald-800'
                                   }`}
                                 >
-                                  <span>✅</span>
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
                                   <span>Presente</span>
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() => handleUpdateAttendance(booking.id, 'NO_SHOW')}
                                   disabled={actionLoading === `status-${booking.id}`}
-                                  className={`px-3 py-1.5 text-xs rounded-xl font-medium transition flex items-center gap-1 ${
+                                  className={`px-3.5 py-2 text-xs rounded-xl font-bold transition flex items-center gap-1.5 ${
                                     isNoShow
                                       ? 'bg-rose-700 text-white shadow-sm ring-2 ring-rose-500 ring-offset-1'
                                       : 'bg-stone-100 text-stone-700 hover:bg-rose-100 hover:text-rose-800'
                                   }`}
                                 >
-                                  <span>❌</span>
-                                  <span>Ausente</span>
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>No Presente</span>
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() => handleUpdateAttendance(booking.id, 'EXCUSED')}
                                   disabled={actionLoading === `status-${booking.id}`}
-                                  className={`px-3 py-1.5 text-xs rounded-xl font-medium transition flex items-center gap-1 ${
+                                  className={`px-3 py-2 text-xs rounded-xl font-semibold transition flex items-center gap-1 ${
                                     isExcused
-                                      ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-400 ring-offset-1'
-                                      : 'bg-stone-100 text-stone-700 hover:bg-amber-100 hover:text-amber-800'
+                                      ? 'bg-amber-600 text-white shadow-sm'
+                                      : 'bg-stone-100 text-stone-600 hover:bg-amber-100 hover:text-amber-800'
                                   }`}
                                 >
-                                  <span>🟡</span>
                                   <span>Justificado</span>
-                                </button>
-
-                                <button
-                                  onClick={() => handleUpdateAttendance(booking.id, 'PENDING')}
-                                  disabled={actionLoading === `status-${booking.id}`}
-                                  className={`px-2.5 py-1.5 text-xs rounded-xl font-medium transition ${
-                                    isPending
-                                      ? 'bg-stone-300 text-stone-800'
-                                      : 'text-stone-400 hover:bg-stone-200'
-                                  }`}
-                                  title="Restablecer a pendiente"
-                                >
-                                  <span>⏳</span>
                                 </button>
                               </div>
                             </div>
 
-                            {/* Detalles de Check-in y Notas */}
-                            <div className="mt-3 pt-3 border-t border-stone-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
-                              <div className="text-stone-500 flex items-center gap-2">
+                            {/* Notas u observaciones de la clase */}
+                            <div className="mt-3 pt-2.5 border-t border-stone-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+                              <div className="text-stone-500">
                                 {booking.checkInAt ? (
-                                  <span className="text-emerald-800 font-medium">
-                                    🕒 Check-in registrado a las{' '}
+                                  <span className="text-emerald-800 font-semibold">
+                                    ✓ Asistencia registrada (
                                     {new Date(booking.checkInAt).toLocaleTimeString('es-CL', {
                                       hour: '2-digit',
                                       minute: '2-digit',
                                     })}
+                                    )
+                                  </span>
+                                ) : isNoShow ? (
+                                  <span className="text-rose-700 font-semibold">
+                                    ✕ Marcado como ausente
                                   </span>
                                 ) : (
-                                  <span>Check-in pendiente</span>
+                                  <span>Pendiente de marcar asistencia</span>
                                 )}
                               </div>
 
-                              {/* Input de Notas del Alumno */}
                               <div className="flex items-center gap-2 flex-1 max-w-md">
                                 <input
                                   type="text"
-                                  placeholder="Observaciones (ej. molestia lumbar, puntual)..."
+                                  placeholder="Observación de clase (opcional)..."
                                   value={editingNotes[booking.id] || ''}
                                   onChange={(e) =>
                                     setEditingNotes({
@@ -861,14 +857,15 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                                       [booking.id]: e.target.value,
                                     })
                                   }
-                                  className="w-full px-3 py-1 text-xs rounded-lg border border-stone-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                                  className="w-full px-3 py-1 text-xs rounded-lg border border-stone-300 bg-white focus:outline-none focus:ring-1 focus:ring-[#3a1b38]"
                                 />
                                 <button
+                                  type="button"
                                   onClick={() =>
                                     handleSaveNotes(booking.id, booking.attendanceStatus)
                                   }
                                   disabled={actionLoading === `notes-${booking.id}`}
-                                  className="px-2.5 py-1 text-xs rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium transition"
+                                  className="px-2.5 py-1 text-xs rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold transition"
                                 >
                                   Guardar
                                 </button>
