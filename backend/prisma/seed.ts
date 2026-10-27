@@ -518,25 +518,24 @@ async function main() {
     ];
 
     for (const tb of todayBookings) {
-      const exists = await prisma.booking.findFirst({
-        where: { userId: tb.userId, scheduleId: todayMorningScheduleId },
+      await prisma.booking.upsert({
+        where: { bookingCode: tb.code },
+        update: {
+          userId: tb.userId,
+          scheduleId: todayMorningScheduleId,
+          status: tb.status,
+          paymentMethod: tb.paymentMethod,
+          attendanceStatus: tb.attendanceStatus,
+        },
+        create: {
+          userId: tb.userId,
+          scheduleId: todayMorningScheduleId,
+          bookingCode: tb.code,
+          status: tb.status,
+          paymentMethod: tb.paymentMethod,
+          attendanceStatus: tb.attendanceStatus,
+        },
       });
-      if (!exists) {
-        await prisma.booking.create({
-          data: {
-            userId: tb.userId,
-            scheduleId: todayMorningScheduleId,
-            bookingCode: tb.code,
-            status: tb.status,
-            paymentMethod: tb.paymentMethod,
-            attendanceStatus: tb.attendanceStatus,
-          },
-        });
-        await prisma.classSchedule.update({
-          where: { id: todayMorningScheduleId },
-          data: { availableSlots: { decrement: 1 } },
-        });
-      }
     }
   }
 
@@ -562,44 +561,53 @@ async function main() {
     ];
 
     for (const yb of yesterdayBookings) {
-      const exists = await prisma.booking.findFirst({
-        where: { userId: yb.userId, scheduleId: yesterdayScheduleId },
+      await prisma.booking.upsert({
+        where: { bookingCode: yb.code },
+        update: {
+          userId: yb.userId,
+          scheduleId: yesterdayScheduleId,
+          status: yb.status,
+          paymentMethod: yb.paymentMethod,
+          attendanceStatus: yb.attendanceStatus,
+          checkInAt: yb.attendanceStatus === 'ATTENDED' ? new Date(Date.now() - 86400000) : null,
+          attendanceNotes: yb.notes,
+        },
+        create: {
+          userId: yb.userId,
+          scheduleId: yesterdayScheduleId,
+          bookingCode: yb.code,
+          status: yb.status,
+          paymentMethod: yb.paymentMethod,
+          attendanceStatus: yb.attendanceStatus,
+          checkInAt: yb.attendanceStatus === 'ATTENDED' ? new Date(Date.now() - 86400000) : null,
+          attendanceNotes: yb.notes,
+        },
       });
-      if (!exists) {
-        await prisma.booking.create({
-          data: {
-            userId: yb.userId,
-            scheduleId: yesterdayScheduleId,
-            bookingCode: yb.code,
-            status: yb.status,
-            paymentMethod: yb.paymentMethod,
-            attendanceStatus: yb.attendanceStatus,
-            checkInAt: yb.attendanceStatus === 'ATTENDED' ? new Date(Date.now() - 86400000) : null,
-            attendanceNotes: yb.notes,
-          },
-        });
-      }
     }
   }
 
   // 9. Poblar reserva cancelada para la clase SUSPENDIDA de anteayer
   if (cancelledPastScheduleId) {
-    const existsCancel = await prisma.booking.findFirst({
-      where: { userId: alumno.id, scheduleId: cancelledPastScheduleId },
+    await prisma.booking.upsert({
+      where: { bookingCode: 'PIL-CANC-201' },
+      update: {
+        userId: alumno.id,
+        scheduleId: cancelledPastScheduleId,
+        status: 'CANCELADA_CLIENTE',
+        paymentMethod: 'TRANSFER',
+        attendanceStatus: 'EXCUSED',
+        rejectionReason: 'Sesión suspendida por mantención de sala en Sede Las Condes',
+      },
+      create: {
+        userId: alumno.id,
+        scheduleId: cancelledPastScheduleId,
+        bookingCode: 'PIL-CANC-201',
+        status: 'CANCELADA_CLIENTE',
+        paymentMethod: 'TRANSFER',
+        attendanceStatus: 'EXCUSED',
+        rejectionReason: 'Sesión suspendida por mantención de sala en Sede Las Condes',
+      },
     });
-    if (!existsCancel) {
-      await prisma.booking.create({
-        data: {
-          userId: alumno.id,
-          scheduleId: cancelledPastScheduleId,
-          bookingCode: 'PIL-CANC-201',
-          status: 'CANCELADA_CLIENTE',
-          paymentMethod: 'TRANSFER',
-          attendanceStatus: 'EXCUSED',
-          rejectionReason: 'Sesión suspendida por mantención de sala en Sede Las Condes',
-        },
-      });
-    }
   }
 
   // 10. Reservas para una clase futura de Valeria
@@ -609,55 +617,67 @@ async function main() {
   });
 
   if (valeriaSchedule) {
-    const existingBooking1 = await prisma.booking.findFirst({
-      where: {
-        OR: [
-          { userId: alumno.id, scheduleId: valeriaSchedule.id },
-          { bookingCode: 'PIL-990001' },
-        ],
+    await prisma.booking.upsert({
+      where: { bookingCode: 'PIL-990001' },
+      update: {
+        userId: alumno.id,
+        scheduleId: valeriaSchedule.id,
+        status: 'CONFIRMADA',
+        paymentMethod: 'TRANSFER',
+        attendanceStatus: 'PENDING',
+      },
+      create: {
+        userId: alumno.id,
+        scheduleId: valeriaSchedule.id,
+        bookingCode: 'PIL-990001',
+        status: 'CONFIRMADA',
+        paymentMethod: 'TRANSFER',
+        attendanceStatus: 'PENDING',
       },
     });
-    if (!existingBooking1) {
-      await prisma.booking.create({
-        data: {
-          userId: alumno.id,
-          scheduleId: valeriaSchedule.id,
-          bookingCode: 'PIL-990001',
-          status: 'CONFIRMADA',
-          paymentMethod: 'TRANSFER',
-          attendanceStatus: 'PENDING',
-        },
-      });
-      await prisma.classSchedule.update({
-        where: { id: valeriaSchedule.id },
-        data: { availableSlots: { decrement: 1 } },
-      });
-    }
 
-    const existingBooking2 = await prisma.booking.findFirst({
-      where: {
-        OR: [
-          { userId: alumno2.id, scheduleId: valeriaSchedule.id },
-          { bookingCode: 'PIL-990002' },
-        ],
+    await prisma.booking.upsert({
+      where: { bookingCode: 'PIL-990002' },
+      update: {
+        userId: alumno2.id,
+        scheduleId: valeriaSchedule.id,
+        status: 'CONFIRMADA',
+        paymentMethod: 'GATEWAY',
+        attendanceStatus: 'ATTENDED',
+        checkInAt: new Date(),
+        attendanceNotes: 'Alumno puntual, primera sesión con reformer',
+      },
+      create: {
+        userId: alumno2.id,
+        scheduleId: valeriaSchedule.id,
+        bookingCode: 'PIL-990002',
+        status: 'CONFIRMADA',
+        paymentMethod: 'GATEWAY',
+        attendanceStatus: 'ATTENDED',
+        checkInAt: new Date(),
+        attendanceNotes: 'Alumno puntual, primera sesión con reformer',
       },
     });
-    if (!existingBooking2) {
-      await prisma.booking.create({
-        data: {
-          userId: alumno2.id,
-          scheduleId: valeriaSchedule.id,
-          bookingCode: 'PIL-990002',
-          status: 'CONFIRMADA',
-          paymentMethod: 'GATEWAY',
-          attendanceStatus: 'ATTENDED',
-          checkInAt: new Date(),
-          attendanceNotes: 'Alumno puntual, primera sesión con reformer',
-        },
-      });
+  }
+
+  // 11. Recalcular cupos disponibles (availableSlots) de manera atómica y consistente
+  const activeSchedulesWithBookings = [
+    todayMorningScheduleId,
+    valeriaSchedule?.id,
+  ].filter(Boolean) as string[];
+
+  for (const sId of activeSchedulesWithBookings) {
+    const activeCount = await prisma.booking.count({
+      where: {
+        scheduleId: sId,
+        status: { in: ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'] },
+      },
+    });
+    const sched = await prisma.classSchedule.findUnique({ where: { id: sId } });
+    if (sched) {
       await prisma.classSchedule.update({
-        where: { id: valeriaSchedule.id },
-        data: { availableSlots: { decrement: 1 } },
+        where: { id: sId },
+        data: { availableSlots: Math.max(0, sched.capacity - activeCount) },
       });
     }
   }
