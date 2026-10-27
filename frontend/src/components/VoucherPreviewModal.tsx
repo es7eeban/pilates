@@ -54,15 +54,15 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-charcoal/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-sand-100 bg-sand-50/70">
+        <div className="shrink-0 flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-sand-100 bg-sand-50/70">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-sage-100 text-sage-800 rounded-xl">
+            <div className="p-2 bg-sage-100 text-sage-800 rounded-xl shrink-0">
               {isPdf ? <FileText className="w-5 h-5" /> : <RotateCw className="w-5 h-5" />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm sm:text-base font-bold text-sage-900">
                   Comprobante de Transferencia
                 </h3>
@@ -72,19 +72,19 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-charcoal-muted mt-0.5">
+              <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
                 {clientName ? `Alumno: ${clientName}` : ''}{' '}
                 {classTitle ? `· Clase: ${classTitle}` : ''}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <a
               href={fullUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 text-charcoal-muted hover:text-sage-800 rounded-xl hover:bg-sand-200/60 transition"
+              className="p-1.5 sm:p-2 text-charcoal-muted hover:text-sage-800 rounded-xl hover:bg-sand-200/60 transition"
               title="Abrir original en nueva pestaña"
             >
               <ExternalLink className="w-4 h-4" />
@@ -94,14 +94,14 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 text-charcoal-muted hover:text-sage-800 rounded-xl hover:bg-sand-200/60 transition"
+              className="p-1.5 sm:p-2 text-charcoal-muted hover:text-sage-800 rounded-xl hover:bg-sand-200/60 transition"
               title="Descargar comprobante"
             >
               <Download className="w-4 h-4" />
             </a>
             <button
               onClick={onClose}
-              className="p-2 text-charcoal-muted hover:text-charcoal rounded-xl hover:bg-sand-200/60 transition"
+              className="p-1.5 sm:p-2 text-charcoal-muted hover:text-charcoal rounded-xl hover:bg-sand-200/60 transition"
               title="Cerrar"
             >
               <X className="w-5 h-5" />
@@ -111,7 +111,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
 
         {/* Viewer Toolbar for Images */}
         {!isPdf && (
-          <div className="flex items-center justify-center gap-3 py-2 px-4 bg-sand-100/60 border-b border-sand-200 text-xs text-charcoal">
+          <div className="shrink-0 flex items-center justify-center gap-3 py-2 px-4 bg-sand-100/60 border-b border-sand-200 text-xs text-charcoal overflow-x-auto">
             <button
               onClick={handleZoomOut}
               className="p-1.5 hover:bg-white rounded-lg transition"
@@ -148,7 +148,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
         )}
 
         {/* Main Viewer Body */}
-        <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-sand-100/30 min-h-[350px]">
+        <div className="flex-1 min-h-0 overflow-auto p-4 flex items-center justify-center bg-sand-100/30">
           {isPdf ? (
             <div className="w-full h-[60vh] rounded-xl overflow-hidden border border-sand-200 shadow-inner bg-white">
               <iframe
@@ -174,7 +174,7 @@ export const VoucherPreviewModal: React.FC<VoucherPreviewModalProps> = ({
 
         {/* Footer with actions (if admin) */}
         {(onApprove || onReject) && (
-          <div className="px-5 py-3 border-t border-sand-200 bg-sand-50/70 flex items-center justify-between gap-3">
+          <div className="shrink-0 px-4 sm:px-5 py-3 border-t border-sand-200 bg-sand-50/70 flex items-center justify-between gap-3">
             <span className="text-xs text-charcoal-muted">
               Resolución rápida para esta transferencia:
             </span>

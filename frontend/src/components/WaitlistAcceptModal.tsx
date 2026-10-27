@@ -149,20 +149,20 @@ export const WaitlistAcceptModal: React.FC<WaitlistAcceptModalProps> = ({
   const remainingMins = calculateRemainingMinutes();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-sand-50/50">
+        <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-sand-100 bg-sand-50/50">
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1 rounded-lg bg-amber-500 text-white">
                 <Zap className="w-3.5 h-3.5" />
               </span>
-              <h2 className="text-lg font-bold text-sage-900">
+              <h2 className="text-base sm:text-lg font-bold text-sage-900">
                 {completed ? '¡Cupo Confirmado!' : '¡Cupo Disponible para Ti!'}
               </h2>
             </div>
-            <p className="text-xs text-charcoal-muted mt-0.5">
+            <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
               {completed
                 ? 'Tu cupo ha sido reservado exitosamente'
                 : 'Se liberó un espacio en tu clase solicitada'}
@@ -177,7 +177,7 @@ export const WaitlistAcceptModal: React.FC<WaitlistAcceptModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

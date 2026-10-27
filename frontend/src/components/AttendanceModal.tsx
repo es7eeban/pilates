@@ -309,27 +309,27 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
       <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-stone-200 overflow-hidden"
+        className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-stone-200 overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Encabezado */}
-        <div className="px-6 py-5 bg-[#220622] text-white flex items-center justify-between border-b border-[#3a1b38]">
+        <div className="shrink-0 px-4 sm:px-6 py-4 sm:py-5 bg-[#220622] text-white flex items-center justify-between border-b border-[#3a1b38]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shrink-0">
               <ClipboardList className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight">
                 {activeView === 'CLASSES'
                   ? 'Asistencia & Check-in · Clases del Día'
                   : 'Control de Asistencia y Estado de Pago en Sala'}
               </h2>
-              <p className="text-xs text-rose-100/80">
+              <p className="text-xs text-rose-100/80 line-clamp-1 sm:line-clamp-none">
                 {activeView === 'CLASSES'
                   ? 'Abre una clase del día para pasar lista, verificar estado de pago y marcarla como Clase Realizada'
-                  : 'Marca a cada alumno como Presente o Ausente, verifica su pago y finaliza la sesión para enviarla al Historial'}
+                  : 'Marca a cada alumno como Presente o Ausente, verifica su pago y finaliza la sesión'}
               </p>
             </div>
           </div>
@@ -337,7 +337,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
             <button
               onClick={handleRefreshCurrentView}
               disabled={loading || rosterLoading}
-              className="text-rose-100 hover:text-white px-3 py-1.5 rounded-xl hover:bg-white/10 transition flex items-center gap-1.5 text-xs font-semibold bg-white/10 border border-white/15"
+              className="text-rose-100 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-white/10 transition flex items-center gap-1.5 text-xs font-semibold bg-white/10 border border-white/15"
               title="Actualizar"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading || rosterLoading ? 'animate-spin' : ''}`} />
@@ -353,7 +353,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         </div>
 
         {/* Cuerpo del Modal */}
-        <div className="flex-1 overflow-y-auto p-6 bg-stone-50 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 bg-stone-50 space-y-4">
           {error && (
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center justify-between">
               <div className="flex items-center gap-2">

@@ -214,17 +214,17 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-sand-200 bg-sand-50/60 flex items-center justify-between">
+        <div className="shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-sand-200 bg-sand-50/60 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-sage-100 text-sage-700 flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-sage-100 text-sage-700 flex items-center justify-center shadow-sm shrink-0">
               <Bell className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-sage-900 leading-tight">
+                <h2 className="text-base sm:text-lg font-bold text-sage-900 leading-tight">
                   Avisos & Notificaciones
                 </h2>
                 {unreadCount > 0 && (
@@ -233,7 +233,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-charcoal-muted">
+              <p className="text-xs text-charcoal-muted line-clamp-1 sm:line-clamp-none">
                 {isAdmin
                   ? 'Bandeja personal del administrador: comprobantes recibidos y alertas operativas'
                   : 'Tus avisos personales de confirmación de clases, pagos y cambios de agenda'}
@@ -245,7 +245,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="px-3 py-1.5 text-xs font-semibold text-sage-700 hover:text-sage-900 bg-white hover:bg-sand-100 border border-sand-200 rounded-xl transition flex items-center gap-1.5"
+                className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-sage-700 hover:text-sage-900 bg-white hover:bg-sand-100 border border-sand-200 rounded-xl transition flex items-center gap-1.5"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Marcar todo leído</span>
@@ -254,14 +254,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             <button
               onClick={fetchMyNotifications}
               disabled={loading}
-              className="p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
+              className="p-1.5 sm:p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
               title="Actualizar"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-sage-600' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
+              className="p-1.5 sm:p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -269,7 +269,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         </div>
 
         {/* List Body */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-3">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3">
           {error && (
             <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -367,9 +367,9 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
         {/* Sub-Modal: Detalle y Gestión Directa de la Notificación Seleccionada */}
         {inspectingNotification && (
-          <div className="fixed inset-0 z-60 bg-charcoal/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-sand-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-6 py-4 border-b border-sand-200 bg-sand-50 flex items-center justify-between">
+          <div className="fixed inset-0 z-60 bg-charcoal/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-200">
+              <div className="shrink-0 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-sand-200 bg-sand-50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   {getTypeIcon(inspectingNotification.type)}
                   <div>
@@ -388,7 +388,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 </button>
               </div>
 
-              <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   {getTypeBadge(inspectingNotification.type)}
                   {inspectingNotification.metadata?.bookingCode && (

@@ -172,18 +172,18 @@ export const AdminBranchesModal: React.FC<AdminBranchesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-sand-50/60">
+        <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-sand-100 bg-sand-50/60">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-sage-900">Gestión de Sedes</h2>
+              <h2 className="text-base sm:text-lg font-bold text-sage-900">Gestión de Sedes</h2>
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-terra-light text-terra border border-terra/20">
                 Admin
               </span>
             </div>
-            <p className="text-xs text-charcoal-muted mt-0.5">
+            <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
               Crea, edita y administra los estudios físicos de pilates disponibles
             </p>
           </div>
@@ -194,7 +194,8 @@ export const AdminBranchesModal: React.FC<AdminBranchesModalProps> = ({
                 className="px-3 py-1.5 bg-sage-800 hover:bg-sage-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Nueva Sede
+                <span className="hidden sm:inline">Nueva Sede</span>
+                <span className="sm:hidden">Nueva</span>
               </button>
             )}
             <button
@@ -207,7 +208,7 @@ export const AdminBranchesModal: React.FC<AdminBranchesModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

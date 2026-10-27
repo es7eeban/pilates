@@ -292,7 +292,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
         </div>
 
         {/* Pie de tarjeta: Acción para Alumno vs Indicador de Ocupación para Admin */}
-        <div className="px-5 py-3.5 bg-sand-50/60 border-t border-sand-100 flex items-center justify-between">
+        <div className="px-5 py-3.5 bg-sand-50/60 border-t border-sand-100 flex flex-wrap items-center justify-between gap-2">
           <div className="font-bold text-base text-sage-900 font-mono">
             {formatPrice(schedule.price)}
           </div>
@@ -607,7 +607,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
           ) : (
             <>
               {/* Cuadrícula de 6 clases por página */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {paginatedSchedules.map((sched) =>
                   renderScheduleCard(
                     sched,

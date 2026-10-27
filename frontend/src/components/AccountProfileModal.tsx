@@ -179,17 +179,17 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-sand-200 bg-sand-50/70 flex items-center justify-between">
+        <div className="shrink-0 px-4 sm:px-6 py-4 sm:py-5 border-b border-sand-200 bg-sand-50/70 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold text-base shadow-sm">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-sage-900 leading-tight">Mi Cuenta</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base sm:text-lg font-bold text-sage-900 leading-tight">Mi Cuenta</h2>
                 {isAdmin ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-terra-light text-terra border border-terra/20">
                     <Shield className="w-2.5 h-2.5" /> Administrador
@@ -200,10 +200,10 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-charcoal-muted">
+              <p className="text-xs text-charcoal-muted line-clamp-1 sm:line-clamp-none mt-0.5">
                 {isClient
                   ? 'Actualiza tus datos de contacto y elige tu sede favorita para tus sesiones'
-                  : 'Gestiona tus datos administrativos y la cuenta bancaria para transferencias y futura pasarela de pagos'}
+                  : 'Gestiona tus datos administrativos y la cuenta bancaria para transferencias'}
               </p>
             </div>
           </div>
@@ -211,14 +211,15 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition"
+            className="p-1.5 sm:p-2 text-charcoal-muted hover:text-charcoal hover:bg-white rounded-xl border border-transparent hover:border-sand-200 transition shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 overflow-y-auto flex-1 min-h-0">
           {error && (
             <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -564,7 +565,7 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
                   <Clock className="w-3.5 h-3.5 text-sage-600" />
                   <span>Jornada Horaria Preferida (Opcional)</span>
                 </label>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   {[
                     { key: null, label: 'Cualquiera (AM / PM)' },
                     { key: 'AM', label: 'Horario AM (Mañana)' },
@@ -590,9 +591,10 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
               </div>
             </div>
           )}
+          </div>
 
-          {/* Footer Buttons */}
-          <div className="pt-4 border-t border-sand-200 flex items-center justify-end gap-2.5">
+          {/* Pinned Footer Buttons */}
+          <div className="shrink-0 p-4 sm:px-6 border-t border-sand-200 bg-sand-50/70 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}

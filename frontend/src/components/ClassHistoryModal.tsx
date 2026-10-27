@@ -285,19 +285,19 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="relative w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col my-auto">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-[#faf9f6]">
+          <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-sand-100 bg-[#faf9f6]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center shadow-sm shrink-0">
                 <History className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[#220622]">
+                <h2 className="text-base sm:text-lg font-bold text-[#220622]">
                   {isAdmin ? 'Historial de Clases & Alumnos' : 'Historial de Clases'}
                 </h2>
-                <p className="text-xs text-charcoal-muted mt-0.5">
+                <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
                   {isAdmin
                     ? 'Registro de clases realizadas y no realizadas (desde el día anterior o cerradas hoy), con detalle de asistentes e información de cancelación'
                     : 'Registro histórico de sesiones realizadas, cancelaciones y comprobantes'}
@@ -307,7 +307,7 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 text-charcoal-muted hover:text-charcoal rounded-full hover:bg-sand-200/60 transition"
+              className="p-1.5 text-charcoal-muted hover:text-charcoal rounded-full hover:bg-sand-200/60 transition shrink-0"
               title="Cerrar historial"
             >
               <X className="w-5 h-5" />
@@ -315,7 +315,7 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
           </div>
 
           {/* Toolbar: Búsqueda + Filtros */}
-          <div className="p-4 border-b border-sand-200 bg-sand-50/40 space-y-3">
+          <div className="shrink-0 p-3 sm:p-4 border-b border-sand-200 bg-sand-50/40 space-y-3">
             <div className="relative">
               <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -422,7 +422,7 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
           </div>
 
           {/* Contenido Principal */}
-          <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

@@ -293,17 +293,17 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
   const offeredCount = waitlistEntries.filter((e) => e.status === 'OFFERED').length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-sand-100 bg-[#faf9f6]">
+        <div className="shrink-0 flex items-center justify-between p-4 sm:p-5 border-b border-sand-100 bg-[#faf9f6]">
           <div>
-            <h2 className="text-lg font-bold text-[#220622]">
+            <h2 className="text-base sm:text-lg font-bold text-[#220622]">
               {isAdmin && adminScope === 'STUDIO'
                 ? 'Reservas Activas del Estudio'
                 : 'Mis Próximas Clases & Reservas'}
             </h2>
-            <p className="text-xs text-charcoal-muted mt-0.5">
+            <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
               {isAdmin && adminScope === 'STUDIO'
                 ? 'Monitoreo de reservas próximas confirmadas, en validación y pendientes de comprobante'
                 : 'Administra tus reservas activas agendadas, comprobantes de pago y listas de espera'}
@@ -347,7 +347,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
         </div>
 
         {/* Tabs switcher */}
-        <div className="flex items-center justify-between border-b border-sand-200 bg-sand-50/30 px-5 pt-2">
+        <div className="shrink-0 flex items-center justify-between border-b border-sand-200 bg-sand-50/30 px-4 sm:px-5 pt-2 overflow-x-auto">
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -400,7 +400,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
 
         {/* Filtros de búsqueda y estado en pestaña de Reservas Activas */}
         {activeTab === 'bookings' && activeBookings.length > 0 && (
-          <div className="px-5 py-3 border-b border-sand-200 bg-sand-50/40 space-y-2.5">
+          <div className="shrink-0 px-4 sm:px-5 py-3 border-b border-sand-200 bg-sand-50/40 space-y-2.5">
             {isAdmin && adminScope === 'STUDIO' && (
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -475,7 +475,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
         )}
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0">
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

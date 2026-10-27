@@ -815,10 +815,10 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
   const currentEditSlots = editPeriod === 'AM' ? amSlots : pmSlots;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-charcoal/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-sand-200 overflow-hidden max-h-[92vh] flex flex-col my-auto">
         {/* Header con pestañas (Bloques Semanales, Por Fecha, y Ajustar Horarios AM/PM) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 border-b border-sand-100 bg-[#faf9f6]">
+        <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-sand-100 bg-[#faf9f6]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center shadow-sm shrink-0">
               {activeViewMode === 'BLOCKS' ? (
@@ -831,19 +831,19 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-bold text-[#220622]">Control de Clases & Horarios</h2>
+                <h2 className="text-base sm:text-lg font-bold text-[#220622]">Control de Clases & Horarios</h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-[#3a1b38] border border-purple-200">
                   Clases de Pilates
                 </span>
               </div>
-              <p className="text-xs text-charcoal-muted mt-0.5">
+              <p className="text-xs text-charcoal-muted mt-0.5 line-clamp-1 sm:line-clamp-none">
                 Agenda clases recurrentes o puntuales, y personaliza libremente los horarios que se muestran en el selector
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            <div className="flex items-center bg-sand-100 p-1 rounded-xl border border-sand-200 text-xs font-bold">
+          <div className="flex items-center gap-2 self-start sm:self-center overflow-x-auto max-w-full">
+            <div className="flex items-center bg-sand-100 p-1 rounded-xl border border-sand-200 text-xs font-bold shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveViewMode('BLOCKS')}
@@ -894,7 +894,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
 
         {/* Barra de Filtros y Botón "+ Agregar Clase" (Visible en vistas de agenda) */}
         {activeViewMode !== 'TIME_SLOTS' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-b border-sand-200 bg-sand-50/40">
+          <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-2.5 sm:py-3 border-b border-sand-200 bg-sand-50/40">
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <div className="flex items-center gap-1.5 bg-white border border-sand-200 rounded-xl px-2.5 py-1.5">
                 <Building2 className="w-3.5 h-3.5 text-[#3a1b38]" />
@@ -979,7 +979,7 @@ export const AdminClassesModal: React.FC<AdminClassesModalProps> = ({
         )}
 
         {/* Cuerpo Principal */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

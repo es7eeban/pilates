@@ -114,38 +114,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Rail / Drawer */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#faf9f6] border-r border-[#e8e5df] shadow-lg lg:shadow-none flex flex-col justify-between transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-72 bg-[#faf9f6] border-r border-[#e8e5df] shadow-lg lg:shadow-none flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Top Header & Branding */}
-        <div className="flex flex-col">
-          <div className="h-16 px-4 flex items-center justify-between border-b border-[#e8e5df] bg-white/70">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold tracking-tight shadow-sm text-sm">
-                K
-              </div>
-              <div>
-                <span className="font-bold text-sm tracking-tight text-[#220622] block leading-tight">
-                  K PILATES
-                </span>
-                <span className="text-[10px] text-[#7f747b] tracking-wider uppercase font-semibold">
-                  Pilates & Wellness
-                </span>
-              </div>
+        <div className="shrink-0 h-16 px-4 flex items-center justify-between border-b border-[#e8e5df] bg-white/70">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold tracking-tight shadow-sm text-sm">
+              K
             </div>
-
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-sand-100 transition lg:hidden"
-              title="Cerrar menú"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div>
+              <span className="font-bold text-sm tracking-tight text-[#220622] block leading-tight">
+                K PILATES
+              </span>
+              <span className="text-[10px] text-[#7f747b] tracking-wider uppercase font-semibold">
+                Pilates & Wellness
+              </span>
+            </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-sand-100 transition lg:hidden"
+            title="Cerrar menú"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
             {/* ========================================================================= */}
             {/* ROL ADMINISTRADOR (V1: Administrador + Instructor por defecto)            */}
             {/* ========================================================================= */}
@@ -406,10 +405,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </>
             )}
           </nav>
-        </div>
 
         {/* Footer: User profile card or login actions */}
-        <div className="p-3 border-t border-[#e8e5df] bg-white/70">
+        <div className="shrink-0 p-3 border-t border-[#e8e5df] bg-white/70">
           {isAuthenticated && user ? (
             <div className="p-2.5 rounded-2xl bg-sand-50/80 border border-sand-200 flex items-center justify-between gap-2 shadow-sm">
               <button

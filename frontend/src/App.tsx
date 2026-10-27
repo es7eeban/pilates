@@ -389,7 +389,7 @@ function MainContent() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50 text-charcoal flex flex-col lg:pl-72 transition-[padding] duration-300">
+    <div className="min-h-screen bg-sand-50 text-charcoal flex flex-col lg:pl-72 transition-[padding] duration-300 overflow-x-clip">
       {/* Sidebar Drawer & Desktop Navigation */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -437,7 +437,12 @@ function MainContent() {
           <Menu className="w-4 h-4" />
           <span>Menú</span>
         </button>
-        <span className="font-serif font-bold text-sm tracking-tight">Cavalli Class</span>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center font-bold text-xs text-rose-100">
+            K
+          </div>
+          <span className="font-serif font-bold text-sm tracking-tight text-white">K PILATES</span>
+        </div>
         <button
           type="button"
           onClick={() => {
@@ -455,7 +460,7 @@ function MainContent() {
         </button>
       </div>
 
-      <main className="flex-1 max-w-5xl mx-auto px-4 py-8 md:py-10 w-full">
+      <main className="flex-1 w-full max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Urgent Waitlist Offer Alert Banner (Solo Alumnos) */}
         {user?.role === 'CLIENT' && offeredWaitlistEntries.length > 0 && (
           <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in duration-300">
@@ -577,15 +582,14 @@ function MainContent() {
                   </div>
 
                   {/* KPI Grid de Administración (Sin Reservas Personales) */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-5 border-t border-white/15">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-5 pt-5 border-t border-white/15">
                     <button
                       type="button"
                       onClick={() => setAdminVouchersOpen(true)}
-                      className={`p-3.5 rounded-xl text-left transition border ${
-                        adminDashboardStats.pendingVouchersCount > 0
-                          ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
-                          : 'bg-white/10 border-white/15 hover:bg-white/15'
-                      }`}
+                      className={`p-3.5 rounded-xl text-left transition border ${adminDashboardStats.pendingVouchersCount > 0
+                        ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
+                        : 'bg-white/10 border-white/15 hover:bg-white/15'
+                        }`}
                     >
                       <div className="flex items-center justify-between text-xs text-rose-100/90 mb-1">
                         <span>Vouchers por Validar</span>
@@ -712,7 +716,7 @@ function MainContent() {
                 {/* ========================================================================= */}
                 {/* SECCIÓN DE GRÁFICOS ANALÍTICOS DEL DASHBOARD (2 GRÁFICOS)                 */}
                 {/* ========================================================================= */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {/* GRÁFICO 1: ASISTENCIA DE CLASES Y ESTADO DE SESIONES */}
                   <div className="bg-white p-5 rounded-2xl border border-sand-200 shadow-sm flex flex-col justify-between space-y-4">
                     <div className="flex items-start justify-between gap-3">
@@ -865,7 +869,7 @@ function MainContent() {
                         adminDashboardStats.branchChart.branches.map((b, idx) => {
                           const barPct = Math.round(
                             (b.bookingsCount / adminDashboardStats.branchChart.maxBranchBookings) *
-                              100,
+                            100,
                           );
                           const occupancyPct =
                             b.totalCapacity > 0
@@ -877,9 +881,8 @@ function MainContent() {
                               <div className="flex items-center justify-between text-xs">
                                 <span className="font-bold text-charcoal flex items-center gap-1.5">
                                   <MapPin
-                                    className={`w-3.5 h-3.5 ${
-                                      idx === 0 ? 'text-[#d92676]' : 'text-[#3a1b38]'
-                                    }`}
+                                    className={`w-3.5 h-3.5 ${idx === 0 ? 'text-[#d92676]' : 'text-[#3a1b38]'
+                                      }`}
                                   />
                                   <span>{b.name}</span>
                                   {idx === 0 && (
@@ -898,9 +901,8 @@ function MainContent() {
                               </div>
                               <div className="w-full h-2.5 bg-sand-100 rounded-full overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full transition-all duration-500 ${
-                                    idx === 0 ? 'bg-[#d92676]' : 'bg-[#3a1b38]'
-                                  }`}
+                                  className={`h-full rounded-full transition-all duration-500 ${idx === 0 ? 'bg-[#d92676]' : 'bg-[#3a1b38]'
+                                    }`}
                                   style={{
                                     width: `${Math.max(b.bookingsCount > 0 ? 12 : 4, barPct)}%`,
                                   }}
@@ -941,9 +943,6 @@ function MainContent() {
                 <div className="p-6 rounded-2xl bg-white border border-sand-200 shadow-sm space-y-5">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="text-xl font-bold text-sage-900">¡Hola, {user.name}!</h2>
@@ -1006,7 +1005,7 @@ function MainContent() {
                   </div>
 
                   {/* Grid de 2 Columnas en Inicio del Alumno */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-sand-100">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pt-3 border-t border-sand-100">
                     <div className="p-4 rounded-2xl bg-sand-50/70 border border-sand-200 flex flex-col justify-between space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1043,23 +1042,22 @@ function MainContent() {
                                     Sesión en {bk.schedule?.branch?.name || 'Sede Central'}
                                   </span>
                                   <span
-                                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                                      bk.status === 'CONFIRMADA'
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                        : bk.status === 'PENDIENTE_VALIDACION'
+                                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${bk.status === 'CONFIRMADA'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : bk.status === 'PENDIENTE_VALIDACION'
                                         ? 'bg-amber-50 text-amber-800 border-amber-200'
                                         : bk.status === 'PENDIENTE_PAGO'
-                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                        : 'bg-stone-100 text-stone-600 border-stone-200'
-                                    }`}
+                                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                          : 'bg-stone-100 text-stone-600 border-stone-200'
+                                      }`}
                                   >
                                     {bk.status === 'CONFIRMADA'
                                       ? 'Confirmada'
                                       : bk.status === 'PENDIENTE_VALIDACION'
-                                      ? 'En Revisión'
-                                      : bk.status === 'PENDIENTE_PAGO'
-                                      ? 'Pendiente Pago'
-                                      : bk.status}
+                                        ? 'En Revisión'
+                                        : bk.status === 'PENDIENTE_PAGO'
+                                          ? 'Pendiente Pago'
+                                          : bk.status}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-[11px] text-charcoal-muted capitalize">
@@ -1125,11 +1123,10 @@ function MainContent() {
                           {myNotifications.slice(0, 2).map((notif) => (
                             <div
                               key={notif.id}
-                              className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs transition ${
-                                !notif.read
-                                  ? 'bg-white border-purple-300 shadow-xs'
-                                  : 'bg-white/70 border-sand-200'
-                              }`}
+                              className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs transition ${!notif.read
+                                ? 'bg-white border-purple-300 shadow-xs'
+                                : 'bg-white/70 border-sand-200'
+                                }`}
                             >
                               <div className="space-y-0.5 min-w-0">
                                 <div className="flex items-center gap-1.5">
@@ -1178,8 +1175,8 @@ function MainContent() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-sand-200 py-6 text-center text-xs text-charcoal-muted bg-white/50">
-        Cavalli Class · Plataforma de Reservas de Clases & Gestión de Sedes · Versión 1.0
+      <footer className="border-t border-sand-200 py-6 text-center text-xs text-charcoal-muted bg-white/50 px-4">
+        K PILATES · Plataforma de Reservas de Clases & Gestión de Sedes · Versión 1.0
       </footer>
 
       {/* Modals */}
@@ -1201,10 +1198,10 @@ function MainContent() {
           selectedBookingForModal ||
           (selectedSchedule
             ? myBookingsList.find(
-                (b) =>
-                  b.scheduleId === selectedSchedule.id &&
-                  ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'].includes(b.status),
-              ) || null
+              (b) =>
+                b.scheduleId === selectedSchedule.id &&
+                ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'].includes(b.status),
+            ) || null
             : null)
         }
         userBookings={myBookingsList}
@@ -1233,9 +1230,9 @@ function MainContent() {
         onOpenMyBookings={
           user?.role === 'CLIENT'
             ? () => {
-                setMyBookingsInitialTab('bookings');
-                setMyBookingsOpen(true);
-              }
+              setMyBookingsInitialTab('bookings');
+              setMyBookingsOpen(true);
+            }
             : undefined
         }
       />
