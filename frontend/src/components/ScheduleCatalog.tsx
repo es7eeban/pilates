@@ -10,51 +10,71 @@ import {
   X,
   Settings,
   ClipboardList,
+  CheckCircle2,
 } from 'lucide-react';
-import type { ClassSchedule, Branch } from '../types/schedule';
-import { schedulesApi, branchesApi } from '../services/api';
+import type { ClassSchedule, Branch, Booking } from '../types/schedule';
+import { schedulesApi, branchesApi, bookingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { WaitlistJoinModal } from './WaitlistJoinModal';
 
 interface ScheduleCatalogProps {
   onRequestLogin: () => void;
-  onSelectSchedule: (schedule: ClassSchedule) => void;
+  onSelectSchedule: (schedule: ClassSchedule, existingBooking?: Booking | null) => void;
   onOpenAccount?: () => void;
   onManageSchedule?: (schedule: ClassSchedule) => void;
+  myBookings?: Booking[];
 }
+
+const PAGE_SIZE = 6;
 
 export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
   onRequestLogin,
   onSelectSchedule,
   onOpenAccount,
   onManageSchedule,
+  myBookings: initialMyBookings,
 }) => {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [userBookings, setUserBookings] = useState<Booking[]>(initialMyBookings || []);
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>('all');
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<'all' | 'AM' | 'PM'>('all');
   const [onlyAvailable, setOnlyAvailable] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [waitlistModalSchedule, setWaitlistModalSchedule] = useState<ClassSchedule | null>(null);
+
+  // Sincronizar reservas si se reciben por prop
+  useEffect(() => {
+    if (initialMyBookings) {
+      setUserBookings(initialMyBookings);
+    }
+  }, [initialMyBookings]);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [branchesData, schedData] = await Promise.all([
+      const [branchesData, schedData, myBookingsData] = await Promise.all([
         branchesApi.getAll(),
         schedulesApi.getAll({
           onlyAvailable: onlyAvailable || undefined,
         }),
+        isAuthenticated && !isAdmin
+          ? bookingsApi.getMyBookings().catch(() => [] as Booking[])
+          : Promise.resolve([] as Booking[]),
       ]);
       setBranches(branchesData);
       setSchedules(schedData);
+      if (isAuthenticated && !isAdmin && myBookingsData.length > 0) {
+        setUserBookings(myBookingsData);
+      }
     } catch (err: any) {
       setError(err.message || 'Error al cargar la agenda de sesiones');
     } finally {
@@ -66,54 +86,62 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
     fetchData();
   }, [onlyAvailable]);
 
-  // Filtrado por Fecha de Calendario, Horario (AM / PM) y Sede
-  const baseFilteredSchedules = useMemo(() => {
-    const now = new Date();
-    return schedules.filter((s) => {
-      // Mostrar próximas sesiones vigentes
-      if (new Date(s.endTime) < now) return false;
+  // Al cambiar cualquier filtro, reiniciar la página a 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedBranchId, selectedDate, selectedTimeOfDay, onlyAvailable]);
 
-      // 1. Filtro por Día del Calendario (YYYY-MM-DD en UTC)
-      if (selectedDate !== 'all') {
-        const sDate = new Date(s.startTime).toISOString().slice(0, 10);
-        if (sDate !== selectedDate) return false;
-      }
-
-      // 2. Filtro por Horario AM / PM
-      if (selectedTimeOfDay !== 'all') {
-        const hour = new Date(s.startTime).getUTCHours();
-        if (selectedTimeOfDay === 'AM' && hour >= 14) return false;
-        if (selectedTimeOfDay === 'PM' && hour < 14) return false;
-      }
-
-      return true;
-    });
-  }, [schedules, selectedDate, selectedTimeOfDay]);
-
-  // Sesiones filtradas cuando se aplica el selector de Sede general
-  const filteredSchedules = useMemo(() => {
-    if (selectedBranchId === 'all') return baseFilteredSchedules;
-    return baseFilteredSchedules.filter((s) => s.branchId === selectedBranchId);
-  }, [baseFilteredSchedules, selectedBranchId]);
-
-  // Sede Favorita SOLO para perfil ALUMNO (CLIENT) — El Admin no tiene vista de Sede Favorita
+  // Sede Favorita para perfil Alumno
   const favoriteBranchId = !isAdmin ? user?.favoriteBranchId || null : null;
   const favoriteBranchObj = useMemo(() => {
     if (!favoriteBranchId || isAdmin) return null;
     return user?.favoriteBranch || branches.find((b) => b.id === favoriteBranchId) || null;
   }, [favoriteBranchId, isAdmin, user?.favoriteBranch, branches]);
 
-  const favoriteBranchSchedules = useMemo(() => {
-    if (!favoriteBranchId || isAdmin) return [];
-    return baseFilteredSchedules.filter((s) => s.branchId === favoriteBranchId);
-  }, [baseFilteredSchedules, favoriteBranchId, isAdmin]);
+  // Filtrado robusto por Sede, Horario (AM/PM) y Día de Calendario
+  const filteredSchedules = useMemo(() => {
+    const now = new Date();
 
-  const generalSchedules = useMemo(() => {
-    if (selectedBranchId !== 'all') {
-      return filteredSchedules;
-    }
-    return baseFilteredSchedules;
-  }, [baseFilteredSchedules, filteredSchedules, selectedBranchId]);
+    return schedules.filter((s) => {
+      // 1. Filtro por Día del Calendario
+      if (selectedDate !== 'all') {
+        const rawDate = (s.startTime || '').slice(0, 10);
+        const isoDate = new Date(s.startTime).toISOString().slice(0, 10);
+        if (rawDate !== selectedDate && isoDate !== selectedDate) {
+          return false;
+        }
+      } else {
+        // En vista general ("Todos los días"), excluir sesiones ya finalizadas
+        if (new Date(s.endTime) < now) return false;
+      }
+
+      // 2. Filtro por Horario AM / PM
+      if (selectedTimeOfDay !== 'all') {
+        const hour = new Date(s.startTime).getUTCHours();
+        if (selectedTimeOfDay === 'AM' && hour >= 12) return false;
+        if (selectedTimeOfDay === 'PM' && hour < 12) return false;
+      }
+
+      // 3. Filtro por Sede
+      if (selectedBranchId !== 'all') {
+        if (s.branchId !== selectedBranchId) return false;
+      }
+
+      // 4. Solo con cupos disponibles si está activado
+      if (onlyAvailable && s.availableSlots <= 0) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [schedules, selectedDate, selectedTimeOfDay, selectedBranchId, onlyAvailable]);
+
+  // Paginación: 6 clases por página
+  const totalPages = Math.ceil(filteredSchedules.length / PAGE_SIZE) || 1;
+  const paginatedSchedules = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredSchedules.slice(start, start + PAGE_SIZE);
+  }, [filteredSchedules, currentPage]);
 
   const hasActiveFilters =
     selectedBranchId !== 'all' ||
@@ -138,7 +166,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
 
   const getAmPmLabel = (isoString: string) => {
     const hour = new Date(isoString).getUTCHours();
-    return hour < 14 ? 'Bloque AM · Mañana' : 'Bloque PM · Tarde';
+    return hour < 12 ? 'Jornada AM' : 'Jornada PM';
   };
 
   const formatDate = (isoString: string) => {
@@ -164,15 +192,30 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
     const isLow = schedule.availableSlots > 0 && schedule.availableSlots <= 2;
     const enrolledCount = Math.max(0, schedule.capacity - schedule.availableSlots);
 
+    // Verificar si el alumno ya tiene una reserva activa para esta sesión
+    const userBooking = userBookings.find(
+      (b) =>
+        b.scheduleId === schedule.id &&
+        ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'].includes(b.status),
+    );
+
+    const isConfirmed = userBooking?.status === 'CONFIRMADA';
+
     return (
       <div
         key={schedule.id}
         className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden group ${
-          highlightFavorite ? 'border-purple-200 ring-1 ring-purple-100' : 'border-sand-200'
+          userBooking
+            ? isConfirmed
+              ? 'border-emerald-300 ring-2 ring-emerald-500/30'
+              : 'border-amber-300 ring-2 ring-amber-500/30'
+            : highlightFavorite
+              ? 'border-purple-200 ring-1 ring-purple-100'
+              : 'border-sand-200'
         }`}
       >
         <div className="p-5">
-          {/* Sede & Aforo */}
+          {/* Sede & Aforo / Estado de Reserva */}
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <span
               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
@@ -189,9 +232,20 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
               {schedule.branch?.name || 'Sede Central'}
             </span>
 
-            {isFull ? (
+            {userBooking ? (
+              isConfirmed ? (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Clase Confirmada
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse">
+                  <Clock className="w-3 h-3 text-amber-600" /> En Espera
+                </span>
+              )
+            ) : isFull ? (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
-                <Users className="w-3 h-3" /> {isAdmin ? `Completo (${schedule.capacity}/${schedule.capacity})` : 'Agotado · Sobrecupo'}
+                <Users className="w-3 h-3" />{' '}
+                {isAdmin ? `Completo (${schedule.capacity}/${schedule.capacity})` : 'Agotado · Sobrecupo'}
               </span>
             ) : isLow ? (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse">
@@ -209,9 +263,9 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
             {formatDate(schedule.startTime)}
           </span>
 
-          {/* Título simple V1 */}
+          {/* Título de la Clase */}
           <h3 className="font-bold text-base text-charcoal mt-1">
-            Sesión de Pilates · {schedule.branch?.name || 'Estudio'}
+            {schedule.classType?.title || 'Sesión de Pilates'} · {schedule.branch?.name || 'Estudio'}
           </h3>
 
           {/* Detalles de Horario AM / PM */}
@@ -261,6 +315,30 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
                 </button>
               )}
             </div>
+          ) : userBooking ? (
+            /* Alumno ya reservó esta clase: abrir modal de confirmación con estado e información */
+            <button
+              type="button"
+              onClick={() => onSelectSchedule(schedule, userBooking)}
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 ${
+                isConfirmed
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  : 'bg-amber-600 hover:bg-amber-700 text-white'
+              }`}
+              title="Ver confirmación y detalles de tu reserva"
+            >
+              {isConfirmed ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Ver Confirmación</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>En Espera de Confirmación</span>
+                </>
+              )}
+            </button>
           ) : isFull ? (
             !isAuthenticated ? (
               <button
@@ -288,7 +366,7 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
             </button>
           ) : (
             <button
-              onClick={() => onSelectSchedule(schedule)}
+              onClick={() => onSelectSchedule(schedule, null)}
               className="px-4 py-2 bg-[#3a1b38] hover:bg-[#4f244c] text-white text-xs font-semibold rounded-xl transition shadow-sm"
             >
               Reservar Clase
@@ -300,8 +378,8 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
   };
 
   return (
-    <section className="mt-6 space-y-8">
-      {/* BARRA DE FILTROS V1: SEDE + HORARIO (AM/PM) + CALENDARIO */}
+    <section className="mt-6 space-y-6">
+      {/* BARRA DE FILTROS: SEDE + HORARIO (AM/PM) + CALENDARIO */}
       <div className="bg-white p-5 rounded-2xl border border-sand-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-sand-100">
           <div>
@@ -351,11 +429,18 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
               aria-label="Filtrar por sede"
             >
               <option value="all">Todas las Sedes ({branches.length})</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} {b.commune ? `· ${b.commune}` : ''}
+              {favoriteBranchObj && (
+                <option value={favoriteBranchObj.id}>
+                  ⭐ Mi Sede: {favoriteBranchObj.name}
                 </option>
-              ))}
+              )}
+              {branches
+                .filter((b) => b.id !== favoriteBranchObj?.id)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} {b.commune ? `· ${b.commune}` : ''}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -368,8 +453,8 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
             <div className="grid grid-cols-3 gap-1.5">
               {[
                 { id: 'all', label: 'Todos' },
-                { id: 'AM', label: 'AM (Mañana)' },
-                { id: 'PM', label: 'PM (Tarde)' },
+                { id: 'AM', label: 'AM' },
+                { id: 'PM', label: 'PM' },
               ].map((slot) => {
                 const active = selectedTimeOfDay === slot.id;
                 return (
@@ -415,6 +500,16 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
                 className="w-full px-3.5 py-2 text-xs font-semibold bg-sand-50 border border-sand-200 rounded-xl text-charcoal focus:outline-none focus:border-[#3a1b38]"
                 title="Elegir día específico del calendario"
               />
+              {selectedDate !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate('all')}
+                  className="p-2 text-charcoal-muted hover:text-charcoal bg-sand-100 hover:bg-sand-200 rounded-xl text-xs"
+                  title="Quitar filtro de fecha"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -457,115 +552,118 @@ export const ScheduleCatalog: React.FC<ScheduleCatalogProps> = ({
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3, 4, 5, 6].map((n) => (
             <div key={n} className="h-56 bg-white/60 animate-pulse rounded-2xl border border-sand-200" />
           ))}
         </div>
       ) : (
-        <>
-          {/* ========================================================================= */}
-          {/* APARTADO 1: PRÓXIMAS SESIONES DE LA SEDE FAVORITA (SOLO ROL ALUMNO)       */}
-          {/* ========================================================================= */}
-          {!isAdmin && favoriteBranchObj && (
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-50/70 via-white to-rose-50/40 border border-purple-200/80 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#3a1b38] text-white text-[10px] font-bold uppercase tracking-wider mb-1">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>Tu Sede Favorita</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#220622]">
-                    Próximas Sesiones en {favoriteBranchObj.name}
-                  </h3>
-                  <p className="text-xs text-charcoal-muted">
-                    Horarios próximos disponibles directamente en tu sede predilecta ({favoriteBranchSchedules.length}{' '}
-                    {favoriteBranchSchedules.length === 1 ? 'sesión' : 'sesiones'})
-                  </p>
-                </div>
-
-                {onOpenAccount && (
-                  <button
-                    type="button"
-                    onClick={onOpenAccount}
-                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-purple-50 text-[#3a1b38] border border-purple-200 text-xs font-bold transition self-start sm:self-center flex items-center gap-1.5"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>Cambiar Sede Favorita</span>
-                  </button>
-                )}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5 text-sage-800 text-xs font-bold uppercase tracking-wider mb-0.5">
+                <Calendar className="w-3.5 h-3.5 text-[#3a1b38]" />
+                <span>
+                  {selectedDate !== 'all'
+                    ? `Clases del ${new Date(`${selectedDate}T12:00:00Z`).toLocaleDateString('es-CL', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        timeZone: 'UTC',
+                      })}`
+                    : 'Próximas Clases Agendadas'}
+                </span>
               </div>
+              <h3 className="text-xl font-bold text-sage-900">
+                {selectedBranchId !== 'all'
+                  ? `Clases en ${branches.find((b) => b.id === selectedBranchId)?.name || 'Sede Seleccionada'}`
+                  : 'Agenda de Sesiones'}
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-charcoal-muted">
+              {filteredSchedules.length}{' '}
+              {filteredSchedules.length === 1 ? 'clase encontrada' : 'clases encontradas'}
+            </span>
+          </div>
 
-              {favoriteBranchSchedules.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-white/90 border border-sand-200 text-center space-y-1">
-                  <p className="text-sm font-bold text-charcoal">
-                    No hay sesiones en {favoriteBranchObj.name} con el filtro de fecha/horario actual
-                  </p>
-                  <p className="text-xs text-charcoal-muted">
-                    Prueba limpiando la fecha o revisa abajo las sesiones disponibles en las demás sedes.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {favoriteBranchSchedules.map((sched) => renderScheduleCard(sched, true))}
-                </div>
+          {filteredSchedules.length === 0 ? (
+            <div className="text-center py-14 bg-white rounded-2xl border border-sand-200 p-8">
+              <Calendar className="w-10 h-10 text-sand-400 mx-auto mb-2" />
+              <h4 className="text-base font-bold text-charcoal">
+                No se encontraron sesiones con estos filtros
+              </h4>
+              <p className="text-xs text-charcoal-muted max-w-sm mx-auto mt-1">
+                Intenta seleccionar otra fecha en el calendario, cambiar entre horario AM / PM o elegir otra sede.
+              </p>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="mt-4 px-4 py-2 text-xs font-bold bg-[#3a1b38] hover:bg-[#4f244c] text-white rounded-xl shadow-sm transition"
+                >
+                  Ver todas las sesiones disponibles
+                </button>
               )}
             </div>
-          )}
-
-          {/* ========================================================================= */}
-          {/* APARTADO 2: LISTADO DE PRÓXIMAS SESIONES GENERALES (TODAS LAS SEDES)      */}
-          {/* ========================================================================= */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="flex items-center gap-1.5 text-sage-800 text-xs font-bold uppercase tracking-wider mb-0.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>
-                    {!isAdmin && favoriteBranchObj
-                      ? 'Agenda General Multi-Sede · Para asistir otro día u otra sucursal'
-                      : 'Agenda General de Sesiones'}
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-sage-900">
-                  {selectedBranchId !== 'all'
-                    ? `Próximas Sesiones en ${branches.find((b) => b.id === selectedBranchId)?.name || 'Sede Seleccionada'}`
-                    : 'Próximas Sesiones Generales (Todas las Sedes)'}
-                </h3>
-              </div>
-              <span className="text-xs font-semibold text-charcoal-muted">
-                Mostrando {generalSchedules.length}{' '}
-                {generalSchedules.length === 1 ? 'sesión programada' : 'sesiones programadas'}
-              </span>
-            </div>
-
-            {generalSchedules.length === 0 ? (
-              <div className="text-center py-14 bg-white rounded-2xl border border-sand-200 p-8">
-                <Calendar className="w-10 h-10 text-sand-400 mx-auto mb-2" />
-                <h4 className="text-base font-bold text-charcoal">
-                  No se encontraron sesiones con estos filtros
-                </h4>
-                <p className="text-xs text-charcoal-muted max-w-sm mx-auto mt-1">
-                  Intenta seleccionar otra sede, cambiar entre horario AM / PM o elegir otro día en el calendario.
-                </p>
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={handleResetFilters}
-                    className="mt-4 px-4 py-2 text-xs font-bold bg-[#3a1b38] hover:bg-[#4f244c] text-white rounded-xl shadow-sm transition"
-                  >
-                    Ver todas las sesiones disponibles
-                  </button>
-                )}
-              </div>
-            ) : (
+          ) : (
+            <>
+              {/* Cuadrícula de 6 clases por página */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {generalSchedules.map((sched) =>
-                  renderScheduleCard(sched, !isAdmin && !!favoriteBranchId && sched.branchId === favoriteBranchId),
+                {paginatedSchedules.map((sched) =>
+                  renderScheduleCard(
+                    sched,
+                    !isAdmin && !!favoriteBranchId && sched.branchId === favoriteBranchId,
+                  ),
                 )}
               </div>
-            )}
-          </div>
-        </>
+
+              {/* Barra de Paginación */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-sand-200">
+                  <span className="text-xs font-medium text-charcoal-muted">
+                    Mostrando {(currentPage - 1) * PAGE_SIZE + 1} -{' '}
+                    {Math.min(currentPage * PAGE_SIZE, filteredSchedules.length)} de{' '}
+                    {filteredSchedules.length} clases
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl border border-sand-200 bg-white hover:bg-sand-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      ← Anterior
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-xl text-xs font-bold transition ${
+                          currentPage === page
+                            ? 'bg-[#3a1b38] text-white shadow-xs'
+                            : 'bg-white text-charcoal hover:bg-sand-100 border border-sand-200'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl border border-sand-200 bg-white hover:bg-sand-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Modal de Lista de Espera / Sobrecupo (solo para alumnos) */}

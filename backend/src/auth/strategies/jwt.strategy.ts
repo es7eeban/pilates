@@ -32,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.role === 'INSTRUCTOR') {
       throw new UnauthorizedException('Usuario inactivo o no autorizado');
     }
 

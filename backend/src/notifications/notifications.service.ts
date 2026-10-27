@@ -78,7 +78,7 @@ export class NotificationsService {
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
     const endTimeFormatted = this.formatTime(schedule.endTime);
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede Principal';
     const branchAddress = schedule.branch?.address || '';
     const instructorName = schedule.instructor?.name || 'Administración';
@@ -161,7 +161,7 @@ Equipo Pilates Studio
    */
   async notifyVoucherUploaded(context: BookingNotificationContext) {
     const { user, schedule, bookingCode } = context;
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede Principal';
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
@@ -229,7 +229,7 @@ Ingresa a tu panel de Validación de Pagos o Notificaciones para revisar y aprob
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
     const endTimeFormatted = this.formatTime(schedule.endTime);
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
     const branchAddress = schedule.branch?.address || '';
 
@@ -287,7 +287,7 @@ Pilates Studio
    */
   async notifyPaymentRejected(context: BookingNotificationContext, reason: string) {
     const { user, schedule, bookingCode } = context;
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
@@ -343,7 +343,7 @@ Equipo Pilates Studio
     const { user, schedule, bookingCode } = context;
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
 
     const title = `Reserva cancelada: ${bookingCode}`;
@@ -475,7 +475,7 @@ Equipo Pilates Studio
    * Notificación cuando el alumno se une a la lista de espera (sobrecupo)
    */
   async notifyWaitlistJoined(waitlistEntry: any, user: any, schedule: any) {
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
@@ -506,7 +506,7 @@ Equipo Pilates Studio
    * Notificación cuando se le ofrece el cupo liberado al siguiente en espera (1 hora para aceptar)
    */
   async notifyWaitlistOffered(waitlistEntry: any, user: any, schedule: any) {
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
     const dateFormatted = this.formatDate(schedule.startTime);
     const startTimeFormatted = this.formatTime(schedule.startTime);
@@ -539,7 +539,7 @@ Equipo Pilates Studio
    * Notificación cuando expira la oferta de 1 hora
    */
   async notifyWaitlistExpired(waitlistEntry: any, user: any, schedule: any) {
-    const classTitle = schedule.classType?.title || 'Sesión de Pilates';
+    const classTitle = 'Clase de Pilates';
     const branchName = schedule.branch?.name || 'Sede';
 
     const title = `Plazo de reserva expirado en ${branchName}`;

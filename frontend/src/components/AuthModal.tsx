@@ -213,7 +213,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-sage-600" />
               <span>Cuentas de prueba rápida (Dev Seed):</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => handleQuickFill('admin@pilates.cl', 'Pilates123!')}
@@ -221,14 +221,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 <div className="font-bold text-sage-900">Admin</div>
                 <div className="text-[10px] text-charcoal-muted truncate">admin@...</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('valeria.instructor@pilates.cl', 'Pilates123!')}
-                className="p-2 text-left rounded-lg border border-sand-200 bg-sand-50/60 hover:bg-sage-50 hover:border-sage-300 transition"
-              >
-                <div className="font-bold text-sage-900">Instructor</div>
-                <div className="text-[10px] text-charcoal-muted truncate">valeria@...</div>
               </button>
               <button
                 type="button"

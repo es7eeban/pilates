@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import type { Booking } from '../types/schedule';
 import type { WaitlistEntry } from '../types/waitlist';
-import { bookingsApi, waitlistApi } from '../services/api';
+import type { StudioBankInfo } from '../types/auth';
+import { bookingsApi, waitlistApi, authApi } from '../services/api';
 import { VoucherDropzone } from './VoucherDropzone';
 import { VoucherPreviewModal } from './VoucherPreviewModal';
 import { WaitlistAcceptModal } from './WaitlistAcceptModal';
@@ -68,6 +69,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
   } | null>(null);
 
   const [acceptingWaitlistEntry, setAcceptingWaitlistEntry] = useState<WaitlistEntry | null>(null);
+  const [bankInfo, setBankInfo] = useState<StudioBankInfo | null>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -102,6 +104,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
       setActiveTab(initialTab);
       fetchBookings();
       fetchWaitlist();
+      authApi.getStudioBankInfo().then(setBankInfo).catch(() => {});
     }
   }, [isOpen, initialTab, isAdmin, adminScope]);
 
@@ -524,15 +527,15 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-base text-[#220622]">
-                            {b.schedule?.classType?.title || 'Clase de Pilates'}
+                            Clase de Pilates
                           </h3>
                           <span className="font-mono text-[10px] font-semibold text-charcoal-muted bg-sand-100 px-2 py-0.5 rounded-md border border-sand-200">
                             Ref: {b.bookingCode}
                           </span>
                         </div>
                         <div className="text-xs text-charcoal-muted mt-0.5">
-                          {b.schedule?.classType?.intensityLevel || 'Sesión grupal'} ·{' '}
-                          {b.schedule?.classType?.durationMinutes || 55} min
+                          Sesión de Pilates · 60 min
+                          {''}
                         </div>
                       </div>
 
@@ -685,6 +688,41 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
                       <div className="pt-2 border-t border-sand-200">
                         {selectedVoucherBookingId === b.id ? (
                           <div className="p-3.5 rounded-xl bg-sand-50 border border-sand-300 space-y-3">
+                            {bankInfo && (
+                              <div className="p-2.5 rounded-xl bg-white border border-sand-200 text-xs space-y-1">
+                                <div className="font-bold text-[#220622]">
+                                  Datos Bancarios para Transferencia:
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-charcoal-muted">
+                                  <div>
+                                    Banco: <strong className="text-charcoal">{bankInfo.bankName}</strong>
+                                  </div>
+                                  <div>
+                                    Tipo: <strong className="text-charcoal">{bankInfo.bankAccountType}</strong>
+                                  </div>
+                                  <div>
+                                    N° Cuenta:{' '}
+                                    <strong className="font-mono text-charcoal">
+                                      {bankInfo.bankAccountNumber}
+                                    </strong>
+                                  </div>
+                                  <div>
+                                    RUT:{' '}
+                                    <strong className="font-mono text-charcoal">
+                                      {bankInfo.bankAccountRut}
+                                    </strong>
+                                  </div>
+                                  <div>
+                                    Titular:{' '}
+                                    <strong className="text-charcoal">{bankInfo.bankAccountHolder}</strong>
+                                  </div>
+                                  <div>
+                                    Email:{' '}
+                                    <strong className="text-charcoal">{bankInfo.bankPaymentEmail}</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             <VoucherDropzone
                               file={voucherFile}
                               onFileChange={setVoucherFile}
@@ -841,7 +879,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
 
                       <div>
                         <h3 className="font-bold text-sm text-sage-900">
-                          {entry.schedule?.classType?.title || 'Clase de Pilates'}
+                          Clase de Pilates
                         </h3>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-charcoal-muted mt-1.5">
                           <div className="flex items-center gap-1">
@@ -925,6 +963,7 @@ export const MyBookingsModal: React.FC<MyBookingsModalProps> = ({
             setAcceptingWaitlistEntry(null);
             fetchBookings();
             fetchWaitlist();
+      authApi.getStudioBankInfo().then(setBankInfo).catch(() => {});
             onRefreshSchedule();
           }}
         />

@@ -63,6 +63,7 @@ function MainContent() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   const [selectedSchedule, setSelectedSchedule] = useState<ClassSchedule | null>(null);
+  const [selectedBookingForModal, setSelectedBookingForModal] = useState<Booking | null>(null);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
   const [myBookingsInitialTab, setMyBookingsInitialTab] = useState<'bookings' | 'waitlist'>('bookings');
   const [classHistoryOpen, setClassHistoryOpen] = useState(false);
@@ -340,11 +341,21 @@ function MainContent() {
     setAuthModalOpen(true);
   };
 
-  const handleSelectSchedule = (schedule: ClassSchedule) => {
+  const handleSelectSchedule = (schedule: ClassSchedule, existingBooking?: Booking | null) => {
     if (!isAuthenticated) {
       handleOpenAuth('login');
       return;
     }
+    const resolvedBooking =
+      existingBooking ||
+      myBookingsList.find(
+        (b) =>
+          b.scheduleId === schedule.id &&
+          ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'].includes(b.status),
+      ) ||
+      null;
+
+    setSelectedBookingForModal(resolvedBooking);
     setSelectedSchedule(schedule);
   };
 
@@ -522,7 +533,7 @@ function MainContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="text-xl font-bold text-white">Panel Ejecutivo · {user.name}</h2>
                           <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#d92676] text-white font-bold uppercase tracking-wider">
-                            Administrador & Instructor Titular
+                            Administrador
                           </span>
                         </div>
                         <p className="text-xs text-rose-100/80 mt-0.5">
@@ -693,7 +704,7 @@ function MainContent() {
                     </div>
                     <span className="text-[11px] text-rose-100/70 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Modo Instructor & Administrador activo
+                      Modo Administrador activo
                     </span>
                   </div>
                 </div>
@@ -1160,6 +1171,7 @@ function MainContent() {
                 setAttendanceScheduleId(sch.id);
                 setAttendanceOpen(true);
               }}
+              myBookings={myBookingsList}
             />
           </div>
         )}
@@ -1185,9 +1197,24 @@ function MainContent() {
 
       <BookingModal
         schedule={selectedSchedule}
+        existingBooking={
+          selectedBookingForModal ||
+          (selectedSchedule
+            ? myBookingsList.find(
+                (b) =>
+                  b.scheduleId === selectedSchedule.id &&
+                  ['CONFIRMADA', 'PENDIENTE_VALIDACION', 'PENDIENTE_PAGO'].includes(b.status),
+              ) || null
+            : null)
+        }
+        userBookings={myBookingsList}
         isOpen={!!selectedSchedule}
-        onClose={() => setSelectedSchedule(null)}
+        onClose={() => {
+          setSelectedSchedule(null);
+          setSelectedBookingForModal(null);
+        }}
         onSuccess={() => {
+          fetchUserData();
           handleRefreshSchedule();
         }}
       />

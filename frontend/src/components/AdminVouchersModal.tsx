@@ -139,7 +139,7 @@ export const AdminVouchersModal: React.FC<AdminVouchersModalProps> = ({
                       <span className="font-mono font-bold text-sage-900 bg-sage-100 px-2 py-0.5 rounded">
                         {b.bookingCode}
                       </span>
-                      <span className="font-bold text-charcoal">{b.schedule?.classType?.title}</span>
+                      <span className="font-bold text-charcoal">Clase de Pilates</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal-muted">

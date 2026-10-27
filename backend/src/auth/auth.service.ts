@@ -7,6 +7,7 @@ import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { AuthResponse, AuthTokens, JwtPayload } from './interfaces/jwt-payload.interface.js';
 import { Role } from '@prisma/client';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
 
 @Injectable()
 export class AuthService {
@@ -48,6 +49,13 @@ export class AuthService {
         favoriteBranchId: user.favoriteBranchId,
         favoriteTimeSchedule: user.favoriteTimeSchedule,
         favoriteBranch: user.favoriteBranch,
+        bankName: user.bankName,
+        bankAccountType: user.bankAccountType,
+        bankAccountNumber: user.bankAccountNumber,
+        bankAccountRut: user.bankAccountRut,
+        bankAccountHolder: user.bankAccountHolder,
+        bankPaymentEmail: user.bankPaymentEmail,
+        bankPaymentNotes: user.bankPaymentNotes,
         allowedMenus,
       },
       tokens,
@@ -63,6 +71,10 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('La cuenta de usuario se encuentra deshabilitada');
+    }
+
+    if (user.role === Role.INSTRUCTOR) {
+      throw new UnauthorizedException('El acceso para instructores no se encuentra habilitado por el momento');
     }
 
     const isMatch = await this.comparePassword(dto.password, user.passwordHash);
@@ -91,6 +103,13 @@ export class AuthService {
         favoriteBranchId: user.favoriteBranchId,
         favoriteTimeSchedule: user.favoriteTimeSchedule,
         favoriteBranch: user.favoriteBranch,
+        bankName: user.bankName,
+        bankAccountType: user.bankAccountType,
+        bankAccountNumber: user.bankAccountNumber,
+        bankAccountRut: user.bankAccountRut,
+        bankAccountHolder: user.bankAccountHolder,
+        bankPaymentEmail: user.bankPaymentEmail,
+        bankPaymentNotes: user.bankPaymentNotes,
         allowedMenus,
       },
       tokens,
@@ -137,16 +156,11 @@ export class AuthService {
     };
   }
 
-  async updatePreferences(
-    userId: string,
-    data: {
-      name?: string;
-      email?: string;
-      phone?: string;
-      favoriteBranchId?: string | null;
-      favoriteTimeSchedule?: string | null;
-    },
-  ) {
+  async getStudioBankInfo() {
+    return this.usersService.getStudioBankInfo();
+  }
+
+  async updatePreferences(userId: string, data: UpdatePreferencesDto) {
     return this.usersService.updatePreferences(userId, data);
   }
 

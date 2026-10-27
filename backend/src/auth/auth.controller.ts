@@ -49,6 +49,13 @@ export class AuthController {
     return this.authService.refreshToken(dto.refreshToken);
   }
 
+  @Get('bank-info')
+  @ApiOperation({ summary: 'Obtener datos bancarios actualizados del estudio configurados por el administrador' })
+  @ApiResponse({ status: 200, description: 'Datos de cuenta bancaria para transferencias y liquidaciones' })
+  async getStudioBankInfo() {
+    return this.authService.getStudioBankInfo();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiBearerAuth('JWT-auth')
@@ -62,7 +69,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('preferences')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Actualizar datos de contacto y preferencias del usuario (Sede favorita, horario)' })
+  @ApiOperation({ summary: 'Actualizar datos de contacto y preferencias del usuario (Sede favorita, horario, cuenta bancaria)' })
   @ApiResponse({ status: 200, description: 'Preferencias y datos actualizados' })
   async updatePreferences(
     @CurrentUser() user: AuthenticatedUser,

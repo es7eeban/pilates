@@ -25,6 +25,13 @@ export const safeUserSelect = {
   isActive: true,
   favoriteBranchId: true,
   favoriteTimeSchedule: true,
+  bankName: true,
+  bankAccountType: true,
+  bankAccountNumber: true,
+  bankAccountRut: true,
+  bankAccountHolder: true,
+  bankPaymentEmail: true,
+  bankPaymentNotes: true,
   createdAt: true,
   updatedAt: true,
   favoriteBranch: true,
@@ -131,6 +138,36 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
+  async getStudioBankInfo() {
+    const admins = await this.prisma.user.findMany({
+      where: { role: Role.ADMIN, isActive: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const configuredAdmin =
+      admins.find((a) => a.bankAccountNumber && a.bankAccountNumber.trim().length > 0) ||
+      admins[0];
+
+    return {
+      bankName: configuredAdmin?.bankName?.trim() || 'Banco de Chile',
+      bankAccountType: configuredAdmin?.bankAccountType?.trim() || 'Cuenta Corriente',
+      bankAccountNumber: configuredAdmin?.bankAccountNumber?.trim() || '00-123-45678-90',
+      bankAccountRut: configuredAdmin?.bankAccountRut?.trim() || '76.543.210-K',
+      bankAccountHolder:
+        configuredAdmin?.bankAccountHolder?.trim() ||
+        configuredAdmin?.name ||
+        'K PILATES SpA',
+      bankPaymentEmail:
+        configuredAdmin?.bankPaymentEmail?.trim() ||
+        configuredAdmin?.email ||
+        'pagos@estudiopilates.cl',
+      bankPaymentNotes:
+        configuredAdmin?.bankPaymentNotes?.trim() ||
+        'Indica tu nombre o código de reserva en el comentario de la transferencia.',
+      updatedAt: configuredAdmin?.updatedAt || null,
+    };
+  }
+
   async updatePreferences(
     userId: string,
     data: {
@@ -139,6 +176,13 @@ export class UsersService implements OnModuleInit {
       phone?: string;
       favoriteBranchId?: string | null;
       favoriteTimeSchedule?: string | null;
+      bankName?: string | null;
+      bankAccountType?: string | null;
+      bankAccountNumber?: string | null;
+      bankAccountRut?: string | null;
+      bankAccountHolder?: string | null;
+      bankPaymentEmail?: string | null;
+      bankPaymentNotes?: string | null;
     },
   ) {
     const currentUser = await this.prisma.user.findUnique({
@@ -177,6 +221,25 @@ export class UsersService implements OnModuleInit {
         ...(data.phone !== undefined && { phone: data.phone.trim() }),
         ...(data.favoriteBranchId !== undefined && { favoriteBranchId: data.favoriteBranchId }),
         ...(data.favoriteTimeSchedule !== undefined && { favoriteTimeSchedule: data.favoriteTimeSchedule }),
+        ...(data.bankName !== undefined && { bankName: data.bankName ? data.bankName.trim() : null }),
+        ...(data.bankAccountType !== undefined && {
+          bankAccountType: data.bankAccountType ? data.bankAccountType.trim() : null,
+        }),
+        ...(data.bankAccountNumber !== undefined && {
+          bankAccountNumber: data.bankAccountNumber ? data.bankAccountNumber.trim() : null,
+        }),
+        ...(data.bankAccountRut !== undefined && {
+          bankAccountRut: data.bankAccountRut ? data.bankAccountRut.trim() : null,
+        }),
+        ...(data.bankAccountHolder !== undefined && {
+          bankAccountHolder: data.bankAccountHolder ? data.bankAccountHolder.trim() : null,
+        }),
+        ...(data.bankPaymentEmail !== undefined && {
+          bankPaymentEmail: data.bankPaymentEmail ? data.bankPaymentEmail.trim() : null,
+        }),
+        ...(data.bankPaymentNotes !== undefined && {
+          bankPaymentNotes: data.bankPaymentNotes ? data.bankPaymentNotes.trim() : null,
+        }),
       },
       include: {
         favoriteBranch: true,

@@ -68,11 +68,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-[#3a1b38] text-white flex items-center justify-center font-bold tracking-tight shadow-sm text-sm">
-              P
+              K
             </div>
             <div>
               <span className="font-bold text-base tracking-tight text-[#220622] block leading-tight">
-                Atelier Somatique
+                K PILATES
               </span>
               <span className="text-[10px] text-charcoal-muted tracking-wider uppercase font-semibold">
                 Pilates & Wellness · Multisede

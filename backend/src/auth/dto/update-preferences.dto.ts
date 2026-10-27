@@ -27,4 +27,39 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsString({ message: 'favoriteTimeSchedule debe ser una cadena de texto' })
   favoriteTimeSchedule?: string | null;
+
+  @ApiPropertyOptional({ description: 'Nombre del banco para transferencias y liquidaciones de pasarela', example: 'Banco de Chile' })
+  @IsOptional()
+  @IsString({ message: 'bankName debe ser una cadena de texto' })
+  bankName?: string | null;
+
+  @ApiPropertyOptional({ description: 'Tipo de cuenta bancaria', example: 'Cuenta Corriente' })
+  @IsOptional()
+  @IsString({ message: 'bankAccountType debe ser una cadena de texto' })
+  bankAccountType?: string | null;
+
+  @ApiPropertyOptional({ description: 'Número de cuenta bancaria', example: '00-123-45678-90' })
+  @IsOptional()
+  @IsString({ message: 'bankAccountNumber debe ser una cadena de texto' })
+  bankAccountNumber?: string | null;
+
+  @ApiPropertyOptional({ description: 'RUT del titular de la cuenta bancaria', example: '76.543.210-K' })
+  @IsOptional()
+  @IsString({ message: 'bankAccountRut debe ser una cadena de texto' })
+  bankAccountRut?: string | null;
+
+  @ApiPropertyOptional({ description: 'Nombre o Razón Social del titular de la cuenta bancaria', example: 'K PILATES SpA' })
+  @IsOptional()
+  @IsString({ message: 'bankAccountHolder debe ser una cadena de texto' })
+  bankAccountHolder?: string | null;
+
+  @ApiPropertyOptional({ description: 'Correo electrónico para envío de comprobantes y notificaciones bancarias', example: 'pagos@estudiopilates.cl' })
+  @IsOptional()
+  @IsString({ message: 'bankPaymentEmail debe ser una cadena de texto' })
+  bankPaymentEmail?: string | null;
+
+  @ApiPropertyOptional({ description: 'Notas o instrucciones adicionales para transferencias', example: 'Indicar nombre y código de reserva en el comentario' })
+  @IsOptional()
+  @IsString({ message: 'bankPaymentNotes debe ser una cadena de texto' })
+  bankPaymentNotes?: string | null;
 }

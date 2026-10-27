@@ -98,7 +98,49 @@ export interface UpdateSchedulePayload {
   notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
 }
 
+export interface BulkUpdateSchedulesPayload {
+  scheduleIds: string[];
+  branchId?: string;
+  startTimeSlot?: string;
+  endTimeSlot?: string;
+  capacity?: number;
+  price?: number;
+  reason?: string;
+  notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
+}
+
 export interface CancelSchedulePayload {
   reason?: string;
   notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
+}
+
+export interface BulkCancelSchedulesPayload {
+  scheduleIds: string[];
+  reason?: string;
+  notifyTarget?: 'ENROLLED' | 'ALL_CLIENTS' | 'NONE';
+}
+
+export interface StudioTimeSlot {
+  id: string;
+  period: 'AM' | 'PM';
+  startTime: string;
+  endTime: string;
+  label: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface CreateStudioTimeSlotPayload {
+  period: 'AM' | 'PM';
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
+
+export interface UpdateStudioTimeSlotPayload {
+  period?: 'AM' | 'PM';
+  startTime?: string;
+  endTime?: string;
+  label?: string;
+  isActive?: boolean;
 }

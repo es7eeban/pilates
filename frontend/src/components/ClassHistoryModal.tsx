@@ -487,14 +487,14 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
                                   📍 {cls.branch?.name || 'Sede Principal'}
                                 </span>
                                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sand-100 text-charcoal">
-                                  {hour < 14 ? 'Bloque AM' : 'Bloque PM'}
+                                  {hour < 12 ? 'Jornada AM' : 'Jornada PM'}
                                 </span>
                                 <span className="font-mono text-xs font-bold text-charcoal">
                                   {formatTimeUTC(cls.startTime)} - {formatTimeUTC(cls.endTime)} hrs
                                 </span>
                               </div>
                               <h3 className="font-bold text-base text-charcoal mt-1.5">
-                                {cls.classType?.title || 'Sesión de Pilates'} ·{' '}
+                                Clase de Pilates ·{' '}
                                 <span className="capitalize">{formatDateUTC(cls.startTime)}</span>
                               </h3>
                               <p className="text-xs text-charcoal-muted mt-0.5">
@@ -709,7 +709,7 @@ export const ClassHistoryModal: React.FC<ClassHistoryModalProps> = ({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-bold text-base text-charcoal">
-                                {b.schedule?.classType?.title || 'Clase de Pilates'}
+                                Clase de Pilates
                               </h3>
                               <span className="font-mono text-[10px] font-semibold text-charcoal-muted bg-white/80 px-2 py-0.5 rounded-md border border-sand-200">
                                 Ref: {b.bookingCode}

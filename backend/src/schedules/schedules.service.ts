@@ -4,13 +4,54 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { BookingStatus, Prisma, Role, ScheduleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateScheduleDto } from './dto/create-schedule.dto.js';
 import { BulkGenerateSchedulesDto } from './dto/bulk-generate-schedules.dto.js';
 import { QuerySchedulesDto } from './dto/query-schedules.dto.js';
-import { UpdateScheduleDto, CancelScheduleDto } from './dto/update-schedule.dto.js';
+import {
+  UpdateScheduleDto,
+  CancelScheduleDto,
+  BulkUpdateSchedulesDto,
+  BulkCancelSchedulesDto,
+  CreateStudioTimeSlotDto,
+  UpdateStudioTimeSlotDto,
+} from './dto/update-schedule.dto.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+
+export interface StudioTimeSlotRecord {
+  id: string;
+  period: 'AM' | 'PM';
+  startTime: string;
+  endTime: string;
+  label: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+const DEFAULT_STUDIO_TIME_SLOTS: Array<{
+  period: 'AM' | 'PM';
+  startTime: string;
+  endTime: string;
+  label: string;
+  sortOrder: number;
+}> = [
+  { period: 'AM', startTime: '08:00', endTime: '09:00', label: 'De 8:00 a 9:00 AM', sortOrder: 800 },
+  { period: 'AM', startTime: '09:00', endTime: '10:00', label: 'De 9:00 a 10:00 AM', sortOrder: 900 },
+  { period: 'AM', startTime: '10:00', endTime: '11:00', label: 'De 10:00 a 11:00 AM', sortOrder: 1000 },
+  { period: 'AM', startTime: '11:00', endTime: '12:00', label: 'De 11:00 a 12:00 AM', sortOrder: 1100 },
+  { period: 'PM', startTime: '12:00', endTime: '13:00', label: 'De 12:00 a 1:00 PM', sortOrder: 1200 },
+  { period: 'PM', startTime: '13:00', endTime: '14:00', label: 'De 1:00 a 2:00 PM', sortOrder: 1300 },
+  { period: 'PM', startTime: '14:00', endTime: '15:00', label: 'De 2:00 a 3:00 PM', sortOrder: 1400 },
+  { period: 'PM', startTime: '15:00', endTime: '16:00', label: 'De 3:00 a 4:00 PM', sortOrder: 1500 },
+  { period: 'PM', startTime: '16:00', endTime: '17:00', label: 'De 4:00 a 5:00 PM', sortOrder: 1600 },
+  { period: 'PM', startTime: '17:00', endTime: '18:00', label: 'De 5:00 a 6:00 PM', sortOrder: 1700 },
+  { period: 'PM', startTime: '18:00', endTime: '19:00', label: 'De 6:00 a 7:00 PM', sortOrder: 1800 },
+  { period: 'PM', startTime: '19:00', endTime: '20:00', label: 'De 7:00 a 8:00 PM', sortOrder: 1900 },
+  { period: 'PM', startTime: '20:00', endTime: '21:00', label: 'De 8:00 a 9:00 PM', sortOrder: 2000 },
+  { period: 'PM', startTime: '21:00', endTime: '22:00', label: 'De 9:00 a 10:00 PM', sortOrder: 2100 },
+];
 
 @Injectable()
 export class SchedulesService {
@@ -18,6 +59,206 @@ export class SchedulesService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  private format12HourTime(hhmm: string): string {
+    const [hStr, mStr] = hhmm.split(':');
+    const h = parseInt(hStr, 10);
+    const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${displayH}:${mStr}`;
+  }
+
+  private buildHumanLabel(startTime: string, endTime: string, period: 'AM' | 'PM'): string {
+    return `De ${this.format12HourTime(startTime)} a ${this.format12HourTime(endTime)} ${period}`;
+  }
+
+  private computeSortOrder(startTime: string): number {
+    const [h, m] = startTime.split(':').map((n) => parseInt(n, 10));
+    return h * 100 + m;
+  }
+
+  private async ensureTimeSlotsTableAndDefaults(): Promise<void> {
+    await this.prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS studio_time_slots (
+        id VARCHAR(64) PRIMARY KEY,
+        period VARCHAR(5) NOT NULL,
+        start_time VARCHAR(10) NOT NULL,
+        end_time VARCHAR(10) NOT NULL,
+        label VARCHAR(120) NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    const countRows = await this.prisma.$queryRawUnsafe<Array<{ count: bigint | number }>>(
+      `SELECT COUNT(*)::int AS count FROM studio_time_slots;`,
+    );
+    const total = Number(countRows[0]?.count ?? 0);
+
+    if (total === 0) {
+      for (const item of DEFAULT_STUDIO_TIME_SLOTS) {
+        await this.prisma.$executeRaw`
+          INSERT INTO studio_time_slots (id, period, start_time, end_time, label, is_active, sort_order, created_at, updated_at)
+          VALUES (${randomUUID()}, ${item.period}, ${item.startTime}, ${item.endTime}, ${item.label}, true, ${item.sortOrder}, NOW(), NOW());
+        `;
+      }
+    }
+  }
+
+  async getTimeSlots(): Promise<StudioTimeSlotRecord[]> {
+    await this.ensureTimeSlotsTableAndDefaults();
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        period: string;
+        start_time: string;
+        end_time: string;
+        label: string;
+        is_active: boolean;
+        sort_order: number;
+      }>
+    >`
+      SELECT id, period, start_time, end_time, label, is_active, sort_order
+      FROM studio_time_slots
+      WHERE is_active = true
+      ORDER BY sort_order ASC, start_time ASC, end_time ASC;
+    `;
+
+    return rows.map((r) => ({
+      id: r.id,
+      period: (r.period === 'PM' ? 'PM' : 'AM') as 'AM' | 'PM',
+      startTime: r.start_time,
+      endTime: r.end_time,
+      label: r.label,
+      isActive: r.is_active,
+      sortOrder: r.sort_order,
+    }));
+  }
+
+  async createTimeSlot(dto: CreateStudioTimeSlotDto): Promise<StudioTimeSlotRecord> {
+    await this.ensureTimeSlotsTableAndDefaults();
+
+    const [startH, startM] = dto.startTime.split(':').map(Number);
+    const [endH, endM] = dto.endTime.split(':').map(Number);
+    if (startH * 60 + startM >= endH * 60 + endM) {
+      throw new BadRequestException('La hora de inicio debe ser menor a la hora de término');
+    }
+
+    const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM studio_time_slots
+      WHERE period = ${dto.period}
+        AND start_time = ${dto.startTime}
+        AND end_time = ${dto.endTime}
+        AND is_active = true
+      LIMIT 1;
+    `;
+    if (existing.length > 0) {
+      throw new ConflictException(
+        `El horario ${dto.startTime} a ${dto.endTime} (${dto.period}) ya existe en el selector`,
+      );
+    }
+
+    const id = randomUUID();
+    const label = dto.label?.trim() || this.buildHumanLabel(dto.startTime, dto.endTime, dto.period);
+    const sortOrder = this.computeSortOrder(dto.startTime);
+
+    await this.prisma.$executeRaw`
+      INSERT INTO studio_time_slots (id, period, start_time, end_time, label, is_active, sort_order, created_at, updated_at)
+      VALUES (${id}, ${dto.period}, ${dto.startTime}, ${dto.endTime}, ${label}, true, ${sortOrder}, NOW(), NOW());
+    `;
+
+    return {
+      id,
+      period: dto.period,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
+      label,
+      isActive: true,
+      sortOrder,
+    };
+  }
+
+  async updateTimeSlot(
+    slotId: string,
+    dto: UpdateStudioTimeSlotDto,
+  ): Promise<StudioTimeSlotRecord> {
+    await this.ensureTimeSlotsTableAndDefaults();
+
+    const existingRows = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        period: string;
+        start_time: string;
+        end_time: string;
+        label: string;
+        is_active: boolean;
+        sort_order: number;
+      }>
+    >`
+      SELECT id, period, start_time, end_time, label, is_active, sort_order
+      FROM studio_time_slots
+      WHERE id = ${slotId}
+      LIMIT 1;
+    `;
+
+    const current = existingRows[0];
+    if (!current) {
+      throw new NotFoundException('El selector de horario no fue encontrado');
+    }
+
+    const nextPeriod = (dto.period || current.period) as 'AM' | 'PM';
+    const nextStart = dto.startTime || current.start_time;
+    const nextEnd = dto.endTime || current.end_time;
+
+    const [startH, startM] = nextStart.split(':').map(Number);
+    const [endH, endM] = nextEnd.split(':').map(Number);
+    if (startH * 60 + startM >= endH * 60 + endM) {
+      throw new BadRequestException('La hora de inicio debe ser menor a la hora de término');
+    }
+
+    const nextLabel =
+      dto.label?.trim() || this.buildHumanLabel(nextStart, nextEnd, nextPeriod);
+    const nextSortOrder = this.computeSortOrder(nextStart);
+    const nextActive = dto.isActive !== undefined ? dto.isActive : current.is_active;
+
+    await this.prisma.$executeRaw`
+      UPDATE studio_time_slots
+      SET period = ${nextPeriod},
+          start_time = ${nextStart},
+          end_time = ${nextEnd},
+          label = ${nextLabel},
+          is_active = ${nextActive},
+          sort_order = ${nextSortOrder},
+          updated_at = NOW()
+      WHERE id = ${slotId};
+    `;
+
+    return {
+      id: slotId,
+      period: nextPeriod,
+      startTime: nextStart,
+      endTime: nextEnd,
+      label: nextLabel,
+      isActive: nextActive,
+      sortOrder: nextSortOrder,
+    };
+  }
+
+  async deleteTimeSlot(slotId: string): Promise<{ deleted: boolean; id: string }> {
+    await this.ensureTimeSlotsTableAndDefaults();
+    await this.prisma.$executeRaw`
+      DELETE FROM studio_time_slots WHERE id = ${slotId};
+    `;
+    return { deleted: true, id: slotId };
+  }
+
+  async resetDefaultTimeSlots(): Promise<StudioTimeSlotRecord[]> {
+    await this.ensureTimeSlotsTableAndDefaults();
+    await this.prisma.$executeRawUnsafe(`DELETE FROM studio_time_slots;`);
+    return this.getTimeSlots();
+  }
 
   private async resolveDefaultClassTypeId(classTypeId?: string): Promise<string> {
     if (classTypeId) return classTypeId;
@@ -28,11 +269,11 @@ export class SchedulesService {
     if (!defaultType) {
       const created = await this.prisma.classType.create({
         data: {
-          title: 'Sesión de Pilates Reformer',
+          title: 'Clase de Pilates',
           description: 'Sesión guiada de Pilates en estudio.',
           defaultCapacity: 8,
           defaultPrice: 15000,
-          durationMinutes: 55,
+          durationMinutes: 60,
           intensityLevel: 'Todos los niveles',
           isActive: true,
         },
@@ -204,6 +445,29 @@ export class SchedulesService {
 
     const resolvedInstructorId = await this.resolveDefaultInstructorId(dto.instructorId);
 
+    if (dto.branchId) {
+      const branch = await this.prisma.branch.findUnique({
+        where: { id: dto.branchId },
+      });
+      if (!branch || !branch.isActive) {
+        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+      }
+
+      // Evitar duplicar exactamente la misma sede y horario en la misma fecha
+      const duplicateInBranch = await this.prisma.classSchedule.findFirst({
+        where: {
+          branchId: dto.branchId,
+          status: { not: ScheduleStatus.CANCELLED },
+          startTime: start,
+        },
+      });
+      if (duplicateInBranch) {
+        throw new ConflictException(
+          'Ya existe una clase programada en esta misma sede, fecha y horario',
+        );
+      }
+    }
+
     if (dto.instructorId) {
       const instructor = await this.prisma.user.findUnique({
         where: { id: dto.instructorId },
@@ -213,7 +477,8 @@ export class SchedulesService {
         throw new BadRequestException('El instructor no existe o está inactivo');
       }
 
-      const canTeach = instructor.isInstructor || instructor.role === 'INSTRUCTOR' || instructor.role === 'ADMIN';
+      const canTeach =
+        instructor.isInstructor || instructor.role === 'INSTRUCTOR' || instructor.role === 'ADMIN';
       if (!canTeach) {
         throw new BadRequestException('El usuario seleccionado no tiene facultades de instructor');
       }
@@ -222,24 +487,14 @@ export class SchedulesService {
         where: {
           instructorId: dto.instructorId,
           status: { not: ScheduleStatus.CANCELLED },
-          AND: [
-            { startTime: { lt: end } },
-            { endTime: { gt: start } },
-          ],
+          AND: [{ startTime: { lt: end } }, { endTime: { gt: start } }],
         },
       });
 
       if (overlap) {
-        throw new ConflictException('El instructor ya tiene otra clase agendada (traslape de horario) en este mismo intervalo horario');
-      }
-    }
-
-    if (dto.branchId) {
-      const branch = await this.prisma.branch.findUnique({
-        where: { id: dto.branchId },
-      });
-      if (!branch || !branch.isActive) {
-        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+        throw new ConflictException(
+          'El instructor ya tiene otra clase agendada (traslape de horario) en este mismo intervalo horario',
+        );
       }
     }
 
@@ -294,7 +549,7 @@ export class SchedulesService {
 
     const resolvedInstructorId = await this.resolveDefaultInstructorId(dto.instructorId);
 
-    const duration = dto.durationMinutes ?? classType.durationMinutes;
+    const duration = dto.durationMinutes ?? 60;
     const capacity = dto.capacity ?? classType.defaultCapacity;
     const price = dto.price ?? classType.defaultPrice;
 
@@ -320,27 +575,21 @@ export class SchedulesService {
 
         for (const timeStr of dto.times) {
           const [hours, minutes] = timeStr.split(':').map(Number);
-          const startTime = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`);
+          const startTime = new Date(
+            `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`,
+          );
           const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
 
-          let skip = false;
-          if (dto.instructorId) {
-            const overlap = await this.prisma.classSchedule.findFirst({
-              where: {
-                instructorId: dto.instructorId,
-                status: { not: ScheduleStatus.CANCELLED },
-                AND: [
-                  { startTime: { lt: endTime } },
-                  { endTime: { gt: startTime } },
-                ],
-              },
-            });
-            if (overlap) {
-              skip = true;
-            }
-          }
+          // Evitar crear duplicados en la misma sede y hora
+          const existingSameSlot = await this.prisma.classSchedule.findFirst({
+            where: {
+              branchId: dto.branchId,
+              startTime,
+              status: { not: ScheduleStatus.CANCELLED },
+            },
+          });
 
-          if (!skip) {
+          if (!existingSameSlot) {
             const schedule = await this.prisma.classSchedule.create({
               data: {
                 classTypeId: resolvedClassTypeId,
@@ -405,7 +654,10 @@ export class SchedulesService {
         ...(dto.branchId !== undefined && { branchId: dto.branchId }),
         ...(dto.startTime !== undefined && { startTime: newStart }),
         ...(dto.endTime !== undefined && { endTime: newEnd }),
-        ...(dto.capacity !== undefined && { capacity: dto.capacity, availableSlots: newAvailableSlots }),
+        ...(dto.capacity !== undefined && {
+          capacity: dto.capacity,
+          availableSlots: newAvailableSlots,
+        }),
         ...(dto.price !== undefined && { price: dto.price }),
       },
       include: {
@@ -417,7 +669,10 @@ export class SchedulesService {
 
     // Emitir notificación si corresponde
     try {
-      const targetUserIds = await this.resolveNotificationRecipients(id, dto.notifyTarget ?? 'ENROLLED');
+      const targetUserIds = await this.resolveNotificationRecipients(
+        id,
+        dto.notifyTarget ?? 'ENROLLED',
+      );
       if (targetUserIds.length > 0) {
         await this.notificationsService.notifyScheduleUpdated({
           scheduleId: id,
@@ -438,6 +693,108 @@ export class SchedulesService {
   }
 
   /**
+   * Actualiza en bloque todas las sesiones futuras de un bloque recurrente
+   * (manteniendo la fecha propia de cada sesión, pero actualizando su horario, sede, cupos o tarifa).
+   * Así se reemplaza el bloque completo sin dejar el horario antiguo duplicado.
+   */
+  async bulkUpdate(dto: BulkUpdateSchedulesDto) {
+    const schedules = await this.prisma.classSchedule.findMany({
+      where: {
+        id: { in: dto.scheduleIds },
+        status: { not: ScheduleStatus.CANCELLED },
+      },
+      include: {
+        branch: true,
+      },
+      orderBy: { startTime: 'asc' },
+    });
+
+    if (schedules.length === 0) {
+      throw new NotFoundException('No se encontraron sesiones activas en el bloque seleccionado');
+    }
+
+    if (dto.branchId) {
+      const branch = await this.prisma.branch.findUnique({ where: { id: dto.branchId } });
+      if (!branch || !branch.isActive) {
+        throw new BadRequestException('La sede seleccionada no existe o está inactiva');
+      }
+    }
+
+    const updatedList: any[] = [];
+
+    for (const sch of schedules) {
+      const dateStr = sch.startTime.toISOString().split('T')[0];
+      const oldStartSlot = sch.startTime.toISOString().slice(11, 16);
+      const oldEndSlot = sch.endTime.toISOString().slice(11, 16);
+
+      const nextStartSlot = dto.startTimeSlot || oldStartSlot;
+      const nextEndSlot = dto.endTimeSlot || oldEndSlot;
+
+      const newStart = new Date(`${dateStr}T${nextStartSlot}:00.000Z`);
+      const newEnd = new Date(`${dateStr}T${nextEndSlot}:00.000Z`);
+
+      if (newStart >= newEnd) {
+        throw new BadRequestException('La hora de inicio debe ser anterior a la hora de término');
+      }
+
+      let newAvailableSlots = sch.availableSlots;
+      if (dto.capacity !== undefined && dto.capacity !== sch.capacity) {
+        const occupied = sch.capacity - sch.availableSlots;
+        newAvailableSlots = Math.max(0, dto.capacity - occupied);
+      }
+
+      const updated = await this.prisma.classSchedule.update({
+        where: { id: sch.id },
+        data: {
+          ...(dto.branchId !== undefined && { branchId: dto.branchId }),
+          startTime: newStart,
+          endTime: newEnd,
+          ...(dto.capacity !== undefined && {
+            capacity: dto.capacity,
+            availableSlots: newAvailableSlots,
+          }),
+          ...(dto.price !== undefined && { price: dto.price }),
+        },
+        include: {
+          classType: true,
+          branch: true,
+          instructor: true,
+        },
+      });
+
+      updatedList.push(updated);
+
+      // Notificar si corresponde
+      try {
+        const targetUserIds = await this.resolveNotificationRecipients(
+          sch.id,
+          dto.notifyTarget ?? 'ENROLLED',
+        );
+        if (targetUserIds.length > 0) {
+          await this.notificationsService.notifyScheduleUpdated({
+            scheduleId: sch.id,
+            oldBranchName: sch.branch?.name || 'Sede Principal',
+            newBranchName: updated.branch?.name || 'Sede Principal',
+            oldStartTime: sch.startTime,
+            newStartTime: updated.startTime,
+            newEndTime: updated.endTime,
+            reason: dto.reason,
+            targetUserIds,
+          });
+        }
+      } catch {
+        // Ignorar errores de notificación individuales
+      }
+    }
+
+    return {
+      message: `Se actualizaron ${updatedList.length} sesiones del bloque recurrente`,
+      count: updatedList.length,
+      schedules: updatedList,
+    };
+  }
+
+  /**
    * Cancela / elimina un día específico de clase (ej. un viernes que no habrá clases)
    * y notifica a los alumnos inscritos o a todos los alumnos activos del estudio.
    */
@@ -448,7 +805,10 @@ export class SchedulesService {
       throw new ConflictException('La sesión ya se encuentra cancelada');
     }
 
-    const targetUserIds = await this.resolveNotificationRecipients(id, dto?.notifyTarget ?? 'ENROLLED');
+    const targetUserIds = await this.resolveNotificationRecipients(
+      id,
+      dto?.notifyTarget ?? 'ENROLLED',
+    );
 
     const updated = await this.prisma.$transaction(async (tx) => {
       // Cancelar reservas activas asociadas a ese día
@@ -491,6 +851,29 @@ export class SchedulesService {
     }
 
     return updated;
+  }
+
+  /**
+   * Suspende / elimina en bloque todas las fechas futuras de un bloque recurrente.
+   */
+  async bulkCancel(dto: BulkCancelSchedulesDto) {
+    let cancelledCount = 0;
+    for (const id of dto.scheduleIds) {
+      try {
+        await this.cancel(id, {
+          reason: dto.reason,
+          notifyTarget: dto.notifyTarget,
+        });
+        cancelledCount++;
+      } catch {
+        // Ignorar si alguna ya estaba cancelada
+      }
+    }
+
+    return {
+      message: `Se suspendieron ${cancelledCount} sesiones del bloque recurrente`,
+      count: cancelledCount,
+    };
   }
 
   /**

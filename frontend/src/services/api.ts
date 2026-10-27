@@ -167,6 +167,11 @@ export const authApi = {
     return handleResponse<AuthResponse>(res);
   },
 
+  async getStudioBankInfo(): Promise<import('../types/auth').StudioBankInfo> {
+    const res = await fetch(`${API_BASE_URL}/auth/bank-info`);
+    return handleResponse<import('../types/auth').StudioBankInfo>(res);
+  },
+
   async getMe(): Promise<User> {
     const res = await fetchWithAuth(`${API_BASE_URL}/auth/me`);
     return handleResponse<User>(res);
@@ -367,6 +372,28 @@ export const schedulesApi = {
     return handleResponse(res);
   },
 
+  async bulkUpdate(payload: import('../types/admin').BulkUpdateSchedulesPayload): Promise<{ count: number; schedules: import('../types/schedule').ClassSchedule[] }> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/bulk-update`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
+  async bulkCancel(payload: import('../types/admin').BulkCancelSchedulesPayload): Promise<{ count: number; message: string }> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/bulk-cancel`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+
   async update(id: string, payload: import('../types/admin').UpdateSchedulePayload): Promise<import('../types/schedule').ClassSchedule> {
     const res = await fetchWithAuth(`${API_BASE_URL}/schedules/${id}`, {
       method: 'PATCH',
@@ -387,6 +414,47 @@ export const schedulesApi = {
       body: JSON.stringify(payload || {}),
     });
     return handleResponse(res);
+  },
+
+  async getTimeSlots(): Promise<import('../types/admin').StudioTimeSlot[]> {
+    const res = await fetch(`${API_BASE_URL}/schedules/time-slots`);
+    return handleResponse<import('../types/admin').StudioTimeSlot[]>(res);
+  },
+
+  async createTimeSlot(payload: import('../types/admin').CreateStudioTimeSlotPayload): Promise<import('../types/admin').StudioTimeSlot> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/time-slots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types/admin').StudioTimeSlot>(res);
+  },
+
+  async updateTimeSlot(id: string, payload: import('../types/admin').UpdateStudioTimeSlotPayload): Promise<import('../types/admin').StudioTimeSlot> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/time-slots/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    return handleResponse<import('../types/admin').StudioTimeSlot>(res);
+  },
+
+  async deleteTimeSlot(id: string): Promise<{ deleted: boolean; id: string }> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/time-slots/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<{ deleted: boolean; id: string }>(res);
+  },
+
+  async resetDefaultTimeSlots(): Promise<import('../types/admin').StudioTimeSlot[]> {
+    const res = await fetchWithAuth(`${API_BASE_URL}/schedules/time-slots/reset-defaults`, {
+      method: 'POST',
+    });
+    return handleResponse<import('../types/admin').StudioTimeSlot[]>(res);
   },
 };
 

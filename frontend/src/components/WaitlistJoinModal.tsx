@@ -137,7 +137,7 @@ export const WaitlistJoinModal: React.FC<WaitlistJoinModalProps> = ({
               <div className="p-4 rounded-xl border border-sand-200 bg-sand-50/50 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-sage-900">
-                    {schedule.classType.title}
+                    Clase de Pilates
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
                     Clase Completa (0/{schedule.capacity})

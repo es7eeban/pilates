@@ -21,8 +21,8 @@ Alinear la **Versión 1** con la operación real del estudio, simplificando los 
   - `INSTRUCTOR`: Registrado en la tabla con `enabled: false` en V1, permitiendo activarlo en V2 sin migraciones destructivas.
 - **Autenticación:** `/auth/login`, `/auth/register` y `/auth/me` devuelven `allowedMenus` para que el `Sidebar` renderice dinámicamente las opciones permitidas.
 
-### 2.2. Landing Page Pública (*Atelier Somatique*)
-- **Componente `LandingPage.tsx`:** Vista de entrada para usuarios no autenticados inspirada en *ClassPass / Atelier Somatique*.
+### 2.2. Landing Page Pública (*K PILATES*)
+- **Componente `LandingPage.tsx`:** Vista de entrada para usuarios no autenticados inspirada en *ClassPass / K PILATES*.
 - Incluye barra de navegación sticky, presentación de las 3 sedes principales (**Providencia**, **Las Condes**, **Vitacura**) con el detalle de los días y jornadas en que se imparten clases en cada una (ej. Viernes PM en Las Condes, Viernes AM en Vitacura, Lunes a Sábado en Providencia) y accesos directos a Iniciar Sesión / Crear Cuenta.
 
 ### 2.3. Panel de Inicio Diferenciado por Perfil (`App.tsx`)

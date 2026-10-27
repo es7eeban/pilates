@@ -11,9 +11,14 @@ import {
   AlertCircle,
   Shield,
   Save,
+  Landmark,
+  CreditCard,
+  Hash,
+  FileText,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { branchesApi } from '../services/api';
+import { branchesApi, authApi } from '../services/api';
 import type { Branch } from '../types/schedule';
 
 interface AccountProfileModalProps {
@@ -21,6 +26,28 @@ interface AccountProfileModalProps {
   onClose: () => void;
   onProfileUpdated?: () => void;
 }
+
+const CHILEAN_BANKS = [
+  'Banco de Chile',
+  'Banco Santander',
+  'Banco Estado',
+  'Banco BCI',
+  'Banco Itaú',
+  'Scotiabank Chile',
+  'Banco BICE',
+  'Banco Security',
+  'Banco Falabella',
+  'Banco Consorcio',
+  'Mercado Pago / Tenpo',
+  'Otro Banco',
+];
+
+const ACCOUNT_TYPES = [
+  'Cuenta Corriente',
+  'Cuenta Vista / Cuenta RUT',
+  'Cuenta de Ahorro',
+  'Cuenta Empresa / SpA',
+];
 
 export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
   isOpen,
@@ -34,6 +61,15 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
   const [phone, setPhone] = useState('');
   const [favoriteBranchId, setFavoriteBranchId] = useState<string | null>(null);
   const [favoriteTimeSchedule, setFavoriteTimeSchedule] = useState<string | null>(null);
+
+  // Datos bancarios del Administrador (para Pasarela de Pago y Transferencias de Alumnos)
+  const [bankName, setBankName] = useState('Banco de Chile');
+  const [bankAccountType, setBankAccountType] = useState('Cuenta Corriente');
+  const [bankAccountNumber, setBankAccountNumber] = useState('');
+  const [bankAccountRut, setBankAccountRut] = useState('');
+  const [bankAccountHolder, setBankAccountHolder] = useState('');
+  const [bankPaymentEmail, setBankPaymentEmail] = useState('');
+  const [bankPaymentNotes, setBankPaymentNotes] = useState('');
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
@@ -51,6 +87,35 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
       setError(null);
       setSuccessMsg(null);
 
+      if (user.role === 'ADMIN') {
+        // Inicializar desde el perfil del admin o consultar valores vigentes del estudio
+        setBankName(user.bankName || 'Banco de Chile');
+        setBankAccountType(user.bankAccountType || 'Cuenta Corriente');
+        setBankAccountNumber(user.bankAccountNumber || '00-123-45678-90');
+        setBankAccountRut(user.bankAccountRut || '76.543.210-K');
+        setBankAccountHolder(user.bankAccountHolder || user.name || 'K PILATES SpA');
+        setBankPaymentEmail(user.bankPaymentEmail || user.email || 'pagos@estudiopilates.cl');
+        setBankPaymentNotes(
+          user.bankPaymentNotes ||
+            'Indica tu nombre o código de reserva en el comentario de la transferencia.',
+        );
+
+        authApi
+          .getStudioBankInfo()
+          .then((info) => {
+            setBankName(user.bankName || info.bankName || 'Banco de Chile');
+            setBankAccountType(user.bankAccountType || info.bankAccountType || 'Cuenta Corriente');
+            setBankAccountNumber(user.bankAccountNumber || info.bankAccountNumber || '');
+            setBankAccountRut(user.bankAccountRut || info.bankAccountRut || '');
+            setBankAccountHolder(user.bankAccountHolder || info.bankAccountHolder || user.name);
+            setBankPaymentEmail(user.bankPaymentEmail || info.bankPaymentEmail || user.email);
+            setBankPaymentNotes(user.bankPaymentNotes ?? info.bankPaymentNotes ?? '');
+          })
+          .catch(() => {
+            // Mantener valores locales
+          });
+      }
+
       setLoadingBranches(true);
       branchesApi
         .getAll(false)
@@ -63,6 +128,7 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
   if (!isOpen || !user) return null;
 
   const isClient = user.role === 'CLIENT';
+  const isAdmin = user.role === 'ADMIN';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +140,13 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
       return;
     }
 
+    if (isAdmin && (!bankName.trim() || !bankAccountNumber.trim() || !bankAccountRut.trim())) {
+      setError(
+        'Por favor completa al menos el Banco, Número de Cuenta y RUT para las transferencias y pasarela de pago.',
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       await updatePreferences({
@@ -82,8 +155,21 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
         phone: phone.trim(),
         favoriteBranchId: isClient ? favoriteBranchId : user.favoriteBranchId,
         favoriteTimeSchedule: isClient ? favoriteTimeSchedule : user.favoriteTimeSchedule,
+        ...(isAdmin && {
+          bankName: bankName.trim(),
+          bankAccountType: bankAccountType.trim(),
+          bankAccountNumber: bankAccountNumber.trim(),
+          bankAccountRut: bankAccountRut.trim(),
+          bankAccountHolder: bankAccountHolder.trim() || name.trim(),
+          bankPaymentEmail: bankPaymentEmail.trim() || email.trim(),
+          bankPaymentNotes: bankPaymentNotes.trim() || null,
+        }),
       });
-      setSuccessMsg('Tus datos de cuenta y preferencias se actualizaron correctamente.');
+      setSuccessMsg(
+        isAdmin
+          ? 'Tus datos de contacto y la cuenta bancaria del estudio se actualizaron correctamente. Los alumnos ya verán estos datos al transferir.'
+          : 'Tus datos de cuenta y preferencias se actualizaron correctamente.',
+      );
       onProfileUpdated?.();
     } catch (err: any) {
       setError(err.message || 'No se pudieron actualizar los datos de tu cuenta.');
@@ -94,7 +180,7 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-sand-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-5 border-b border-sand-200 bg-sand-50/70 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -104,7 +190,7 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-sage-900 leading-tight">Mi Cuenta</h2>
-                {user.role === 'ADMIN' ? (
+                {isAdmin ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-terra-light text-terra border border-terra/20">
                     <Shield className="w-2.5 h-2.5" /> Administrador
                   </span>
@@ -117,7 +203,7 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
               <p className="text-xs text-charcoal-muted">
                 {isClient
                   ? 'Actualiza tus datos de contacto y elige tu sede favorita para tus sesiones'
-                  : 'Gestiona tus datos personales y de contacto administrativo'}
+                  : 'Gestiona tus datos administrativos y la cuenta bancaria para transferencias y futura pasarela de pagos'}
               </p>
             </div>
           </div>
@@ -210,7 +296,185 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Selección de Sede Favorita (Exclusivo Alumno) */}
+          {/* 2. Datos Bancarios del Administrador (Para Pasarela de Pago y Transferencias) */}
+          {isAdmin && (
+            <div className="pt-5 border-t border-sand-200 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#3a1b38] flex items-center gap-1.5">
+                    <Landmark className="w-4 h-4 text-[#d92676]" />
+                    <span>Cuenta Bancaria del Estudio (Transferencias & Pasarela de Pago)</span>
+                  </h3>
+                  <p className="text-xs text-charcoal-muted mt-1">
+                    Esta cuenta se muestra en vivo a los alumnos cuando reservan por transferencia y quedará vinculada para recibir los abonos cuando activemos la pasarela de pago online.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-[#3a1b38] border border-purple-200 shrink-0 self-start">
+                  <CreditCard className="w-3 h-3 text-[#d92676]" /> Sincronizado con Alumnos
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Banco / Institución Financiera *
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      list="chilean-banks-list"
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      required
+                      placeholder="Ej. Banco de Chile"
+                      className="w-full pl-9 pr-3 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-medium focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                    />
+                    <datalist id="chilean-banks-list">
+                      {CHILEAN_BANKS.map((b) => (
+                        <option key={b} value={b} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Tipo de Cuenta *
+                  </label>
+                  <select
+                    value={bankAccountType}
+                    onChange={(e) => setBankAccountType(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-medium focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                  >
+                    {ACCOUNT_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Número de Cuenta *
+                  </label>
+                  <div className="relative">
+                    <Hash className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={bankAccountNumber}
+                      onChange={(e) => setBankAccountNumber(e.target.value)}
+                      required
+                      placeholder="Ej. 00-123-45678-90"
+                      className="w-full pl-9 pr-3 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-mono font-semibold focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    RUT del Titular / Empresa *
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountRut}
+                    onChange={(e) => setBankAccountRut(e.target.value)}
+                    required
+                    placeholder="Ej. 76.543.210-K o 15.432.198-7"
+                    className="w-full px-3.5 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-mono font-semibold focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Nombre o Razón Social del Titular *
+                  </label>
+                  <input
+                    type="text"
+                    value={bankAccountHolder}
+                    onChange={(e) => setBankAccountHolder(e.target.value)}
+                    required
+                    placeholder="Ej. K PILATES SpA"
+                    className="w-full px-3.5 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-medium focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Correo para Comprobantes / Notificación *
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-charcoal-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      value={bankPaymentEmail}
+                      onChange={(e) => setBankPaymentEmail(e.target.value)}
+                      required
+                      placeholder="pagos@estudiopilates.cl"
+                      className="w-full pl-9 pr-3 py-2.5 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal font-medium focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-charcoal mb-1">
+                    Instrucciones / Glosa para los Alumnos (Opcional)
+                  </label>
+                  <div className="relative">
+                    <FileText className="w-4 h-4 text-charcoal-muted absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      value={bankPaymentNotes}
+                      onChange={(e) => setBankPaymentNotes(e.target.value)}
+                      placeholder="Ej. Indica tu nombre o código de reserva en el asunto de la transferencia"
+                      className="w-full pl-9 pr-3 py-2 bg-sand-50/70 border border-sand-300 rounded-xl text-charcoal focus:bg-white focus:outline-none focus:border-[#3a1b38]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Vista Previa en Vivo para Alumnos */}
+              <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-200/80 text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#220622]">
+                    Vista previa que verán los alumnos al pagar por transferencia:
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-[#3a1b38] border border-purple-200">
+                    En Vivo
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-charcoal-muted pt-1">
+                  <div>
+                    Banco: <strong className="text-charcoal">{bankName || '—'}</strong>
+                  </div>
+                  <div>
+                    Tipo: <strong className="text-charcoal">{bankAccountType || '—'}</strong>
+                  </div>
+                  <div>
+                    N° Cuenta:{' '}
+                    <strong className="text-charcoal font-mono">{bankAccountNumber || '—'}</strong>
+                  </div>
+                  <div>
+                    RUT: <strong className="text-charcoal font-mono">{bankAccountRut || '—'}</strong>
+                  </div>
+                  <div>
+                    Titular: <strong className="text-charcoal">{bankAccountHolder || name || '—'}</strong>
+                  </div>
+                  <div>
+                    Email: <strong className="text-charcoal">{bankPaymentEmail || email || '—'}</strong>
+                  </div>
+                </div>
+                {bankPaymentNotes && (
+                  <p className="text-[11px] text-[#3a1b38] italic pt-1 border-t border-purple-200/60">
+                    “{bankPaymentNotes}”
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 3. Selección de Sede Favorita (Exclusivo Alumno) */}
           {isClient && (
             <div className="pt-4 border-t border-sand-200 space-y-4">
               <div>
@@ -248,7 +512,9 @@ export const AccountProfileModal: React.FC<AccountProfileModalProps> = ({
                         Ver todas las sedes por igual
                       </span>
                     </div>
-                    {favoriteBranchId === null && <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-300" />}
+                    {favoriteBranchId === null && (
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-300" />
+                    )}
                   </button>
 
                   {branches.map((branch) => {

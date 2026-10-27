@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -14,7 +15,14 @@ import { SchedulesService } from './schedules.service.js';
 import { CreateScheduleDto } from './dto/create-schedule.dto.js';
 import { BulkGenerateSchedulesDto } from './dto/bulk-generate-schedules.dto.js';
 import { QuerySchedulesDto } from './dto/query-schedules.dto.js';
-import { UpdateScheduleDto, CancelScheduleDto } from './dto/update-schedule.dto.js';
+import {
+  UpdateScheduleDto,
+  CancelScheduleDto,
+  BulkUpdateSchedulesDto,
+  BulkCancelSchedulesDto,
+  CreateStudioTimeSlotDto,
+  UpdateStudioTimeSlotDto,
+} from './dto/update-schedule.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -29,6 +37,56 @@ export class SchedulesController {
   @ApiResponse({ status: 200, description: 'Listado de sesiones programadas' })
   async findAll(@Query() query: QuerySchedulesDto) {
     return this.schedulesService.findAll(query);
+  }
+
+  @Get('time-slots')
+  @ApiOperation({ summary: 'Obtener los selectores de horario configurados para AM y PM' })
+  @ApiResponse({ status: 200, description: 'Listado de tramos horarios configurados' })
+  async getTimeSlots() {
+    return this.schedulesService.getTimeSlots();
+  }
+
+  @Post('time-slots')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Agregar un nuevo selector de horario AM o PM (ej. De 9:00 a 10:30 AM)' })
+  @ApiResponse({ status: 201, description: 'Selector de horario creado' })
+  async createTimeSlot(@Body() dto: CreateStudioTimeSlotDto) {
+    return this.schedulesService.createTimeSlot(dto);
+  }
+
+  @Post('time-slots/reset-defaults')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Restaurar los selectores de horario AM y PM por defecto' })
+  @ApiResponse({ status: 200, description: 'Selectores restaurados' })
+  async resetDefaultTimeSlots() {
+    return this.schedulesService.resetDefaultTimeSlots();
+  }
+
+  @Patch('time-slots/:slotId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Editar un selector de horario AM o PM existente' })
+  @ApiResponse({ status: 200, description: 'Selector de horario actualizado' })
+  async updateTimeSlot(
+    @Param('slotId') slotId: string,
+    @Body() dto: UpdateStudioTimeSlotDto,
+  ) {
+    return this.schedulesService.updateTimeSlot(slotId, dto);
+  }
+
+  @Delete('time-slots/:slotId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Eliminar un selector de horario AM o PM' })
+  @ApiResponse({ status: 200, description: 'Selector de horario eliminado' })
+  async deleteTimeSlot(@Param('slotId') slotId: string) {
+    return this.schedulesService.deleteTimeSlot(slotId);
   }
 
   @Get(':id')
@@ -58,6 +116,28 @@ export class SchedulesController {
   @ApiResponse({ status: 201, description: 'Bloques de sesiones generados' })
   async bulkGenerate(@Body() bulkDto: BulkGenerateSchedulesDto) {
     return this.schedulesService.bulkGenerate(bulkDto);
+  }
+
+  @Patch('bulk-update')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Actualizar todas las fechas futuras de un bloque recurrente (horario, sede, cupos o tarifa)',
+  })
+  @ApiResponse({ status: 200, description: 'Bloque recurrente actualizado sin duplicar horarios' })
+  async bulkUpdate(@Body() dto: BulkUpdateSchedulesDto) {
+    return this.schedulesService.bulkUpdate(dto);
+  }
+
+  @Patch('bulk-cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Suspender / eliminar todas las fechas futuras de un bloque recurrente' })
+  @ApiResponse({ status: 200, description: 'Bloque recurrente suspendido exitosamente' })
+  async bulkCancel(@Body() dto: BulkCancelSchedulesDto) {
+    return this.schedulesService.bulkCancel(dto);
   }
 
   @Patch(':id')

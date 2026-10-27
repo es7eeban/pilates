@@ -499,11 +499,11 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                                   📍 {cls.branch?.name || 'Sede Principal'}
                                 </span>
                                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sand-100 text-charcoal">
-                                  {hour < 14 ? 'Bloque AM' : 'Bloque PM'}
+                                  {hour < 12 ? 'Jornada AM' : 'Jornada PM'}
                                 </span>
                               </div>
                               <h3 className="text-base font-bold text-stone-900 mt-2">
-                                {cls.classType.title}
+                                Clase de Pilates
                               </h3>
                               <p className="text-xs text-stone-500 capitalize mt-0.5">
                                 {formatDateUTC(cls.startTime)}
@@ -658,7 +658,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         <span>•</span>
                         <span>{formatDateUTC(rosterData.schedule.startTime)}</span>
                       </div>
-                      <h3 className="text-lg font-bold">{rosterData.schedule.classType.title}</h3>
+                      <h3 className="text-lg font-bold">Clase de Pilates</h3>
                       <p className="text-xs text-rose-100/90 mt-1">
                         ⏰ Horario: {formatTimeUTC(rosterData.schedule.startTime)} -{' '}
                         {formatTimeUTC(rosterData.schedule.endTime)} hrs · Instructor:{' '}

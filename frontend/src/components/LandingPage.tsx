@@ -39,7 +39,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     {
       id: 'providencia',
       name: 'Sede Providencia · Estudio Central',
-      subtitle: 'El corazón de Atelier Somatique',
+      subtitle: 'El corazón de K PILATES',
       address: 'Av. Providencia 2045, Piso 3 (Metro Los Leones)',
       image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80',
       badge: 'Lunes a Viernes AM/PM & Sábados',
@@ -85,11 +85,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="flex items-center gap-3 cursor-pointer group"
           >
             <div className="w-10 h-10 rounded-2xl bg-[#3a1b38] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-              <span className="font-serif font-bold text-lg text-rose-100">P</span>
+              <span className="font-serif font-bold text-lg text-rose-100">K</span>
             </div>
             <div>
               <span className="font-serif font-bold text-xl text-[#261025] block leading-tight tracking-tight">
-                Atelier Somatique
+                K PILATES
               </span>
               <span className="text-[10px] tracking-[0.2em] text-[#78716c] uppercase font-semibold">
                 Pilates & Wellness Studio
@@ -406,7 +406,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Experiencia Sin Fricción</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#261025] tracking-tight">
-              ¿Cómo Funciona Atelier Somatique?
+              ¿Cómo Funciona K PILATES?
             </h2>
             <p className="text-stone-600 text-sm mt-2">
               Un sistema moderno y flexible diseñado para que te concentres exclusivamente en tu movimiento y bienestar.
@@ -465,7 +465,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 Tu cuerpo merece un entrenamiento consciente.
               </h2>
               <p className="text-rose-100 text-sm sm:text-base mt-3 max-w-xl font-light">
-                Únete a Atelier Somatique. Accede a las clases en nuestras 3 sedes, gestiona tus reservas con facilidad y siente la evolución en tu postura y energía.
+                Únete a K PILATES. Accede a las clases en nuestras 3 sedes, gestiona tus reservas con facilidad y siente la evolución en tu postura y energía.
               </p>
             </div>
 
@@ -497,10 +497,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-[#3a1b38] flex items-center justify-center text-white font-serif font-bold">
-                P
+                K
               </div>
               <span className="font-serif font-bold text-base text-white">
-                Atelier Somatique
+                K PILATES
               </span>
             </div>
             <p className="text-stone-400 text-xs leading-relaxed">
@@ -542,13 +542,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onOpenLogin}
               className="px-4 py-2 bg-[#3a1b38] hover:bg-[#512a4e] text-white rounded-xl text-xs font-semibold transition"
             >
-              Portal Alumnos & Docentes
+              Portal Alumnos
             </button>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-500 gap-2">
-          <span>© 2026 Atelier Somatique SpA · Todos los derechos reservados.</span>
+          <span>© 2026 K PILATES SpA · Todos los derechos reservados.</span>
           <span>Plataforma de Agendamiento Somático & Sobrecupos</span>
         </div>
       </footer>

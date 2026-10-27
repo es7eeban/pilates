@@ -69,6 +69,13 @@ async function main() {
       isActive: true,
       favoriteBranchId: sedeProvidencia.id,
       favoriteTimeSchedule: '09:00',
+      bankName: 'Banco de Chile',
+      bankAccountType: 'Cuenta Corriente',
+      bankAccountNumber: '00-123-45678-90',
+      bankAccountRut: '76.543.210-K',
+      bankAccountHolder: 'K PILATES SpA',
+      bankPaymentEmail: 'pagos@estudiopilates.cl',
+      bankPaymentNotes: 'Indica tu nombre o código de reserva en el comentario de la transferencia.',
     },
   });
   console.log(`✅ Admin verificado: ${admin.email}`);
@@ -79,6 +86,7 @@ async function main() {
     update: {
       role: Role.INSTRUCTOR,
       isInstructor: true,
+      isActive: false,
       favoriteBranchId: sedeLasCondes.id,
     },
     create: {
@@ -88,7 +96,7 @@ async function main() {
       passwordHash,
       role: Role.INSTRUCTOR,
       isInstructor: true,
-      isActive: true,
+      isActive: false,
       favoriteBranchId: sedeLasCondes.id,
       favoriteTimeSchedule: '18:00',
     },
@@ -101,6 +109,13 @@ async function main() {
     update: {
       favoriteBranchId: sedeProvidencia.id,
       favoriteTimeSchedule: '09:00',
+      bankName: 'Banco de Chile',
+      bankAccountType: 'Cuenta Corriente',
+      bankAccountNumber: '00-123-45678-90',
+      bankAccountRut: '76.543.210-K',
+      bankAccountHolder: 'K PILATES SpA',
+      bankPaymentEmail: 'pagos@estudiopilates.cl',
+      bankPaymentNotes: 'Indica tu nombre o código de reserva en el comentario de la transferencia.',
     },
     create: {
       name: 'Constanza Morales',
@@ -112,6 +127,13 @@ async function main() {
       isActive: true,
       favoriteBranchId: sedeProvidencia.id,
       favoriteTimeSchedule: '09:00',
+      bankName: 'Banco de Chile',
+      bankAccountType: 'Cuenta Corriente',
+      bankAccountNumber: '00-123-45678-90',
+      bankAccountRut: '76.543.210-K',
+      bankAccountHolder: 'K PILATES SpA',
+      bankPaymentEmail: 'pagos@estudiopilates.cl',
+      bankPaymentNotes: 'Indica tu nombre o código de reserva en el comentario de la transferencia.',
     },
   });
 
@@ -128,6 +150,13 @@ async function main() {
       isActive: true,
       favoriteBranchId: sedeProvidencia.id,
       favoriteTimeSchedule: '09:00',
+      bankName: 'Banco de Chile',
+      bankAccountType: 'Cuenta Corriente',
+      bankAccountNumber: '00-123-45678-90',
+      bankAccountRut: '76.543.210-K',
+      bankAccountHolder: 'K PILATES SpA',
+      bankPaymentEmail: 'pagos@estudiopilates.cl',
+      bankPaymentNotes: 'Indica tu nombre o código de reserva en el comentario de la transferencia.',
     },
   });
 
@@ -334,6 +363,81 @@ async function main() {
     },
   ];
 
+  // Generar además clases programadas para los próximos 14 días en cada sede
+  for (let offset = 0; offset <= 14; offset++) {
+    plannedSchedules.push(
+      // Sede Providencia: AM & PM
+      {
+        classTypeId: reformerEsencial.id,
+        instructorId: admin.id,
+        branchId: sedeProvidencia.id,
+        dayOffset: offset,
+        startHour: 9,
+        startMin: 0,
+        duration: 55,
+        capacity: 8,
+        status: ScheduleStatus.SCHEDULED,
+      },
+      {
+        classTypeId: reformerDinamico.id,
+        instructorId: admin.id,
+        branchId: sedeProvidencia.id,
+        dayOffset: offset,
+        startHour: 18,
+        startMin: 30,
+        duration: 55,
+        capacity: 8,
+        status: ScheduleStatus.SCHEDULED,
+      },
+      // Sede Las Condes: AM & PM
+      {
+        classTypeId: matFlow.id,
+        instructorId: admin.id,
+        branchId: sedeLasCondes.id,
+        dayOffset: offset,
+        startHour: 10,
+        startMin: 30,
+        duration: 60,
+        capacity: 10,
+        status: ScheduleStatus.SCHEDULED,
+      },
+      {
+        classTypeId: reformerEsencial.id,
+        instructorId: admin.id,
+        branchId: sedeLasCondes.id,
+        dayOffset: offset,
+        startHour: 19,
+        startMin: 0,
+        duration: 55,
+        capacity: 8,
+        status: ScheduleStatus.SCHEDULED,
+      },
+      // Sede Vitacura: AM & PM
+      {
+        classTypeId: reformerDinamico.id,
+        instructorId: admin.id,
+        branchId: sedeVitacura.id,
+        dayOffset: offset,
+        startHour: 8,
+        startMin: 30,
+        duration: 55,
+        capacity: 8,
+        status: ScheduleStatus.SCHEDULED,
+      },
+      {
+        classTypeId: matFlow.id,
+        instructorId: admin.id,
+        branchId: sedeVitacura.id,
+        dayOffset: offset,
+        startHour: 17,
+        startMin: 30,
+        duration: 60,
+        capacity: 8,
+        status: ScheduleStatus.SCHEDULED,
+      }
+    );
+  }
+
   await prisma.classSchedule.updateMany({
     where: { branchId: null },
     data: { branchId: sedeProvidencia.id },
@@ -352,7 +456,7 @@ async function main() {
 
     let schedule = await prisma.classSchedule.findFirst({
       where: {
-        classTypeId: s.classTypeId,
+        branchId: s.branchId,
         startTime,
       },
     });
@@ -506,7 +610,12 @@ async function main() {
 
   if (valeriaSchedule) {
     const existingBooking1 = await prisma.booking.findFirst({
-      where: { userId: alumno.id, scheduleId: valeriaSchedule.id },
+      where: {
+        OR: [
+          { userId: alumno.id, scheduleId: valeriaSchedule.id },
+          { bookingCode: 'PIL-990001' },
+        ],
+      },
     });
     if (!existingBooking1) {
       await prisma.booking.create({
@@ -526,7 +635,12 @@ async function main() {
     }
 
     const existingBooking2 = await prisma.booking.findFirst({
-      where: { userId: alumno2.id, scheduleId: valeriaSchedule.id },
+      where: {
+        OR: [
+          { userId: alumno2.id, scheduleId: valeriaSchedule.id },
+          { bookingCode: 'PIL-990002' },
+        ],
+      },
     });
     if (!existingBooking2) {
       await prisma.booking.create({

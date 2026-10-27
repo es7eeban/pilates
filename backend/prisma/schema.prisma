@@ -58,6 +58,13 @@ model User {
   isActive     Boolean  @default(true) @map("is_active")
   favoriteBranchId     String?  @map("favorite_branch_id")
   favoriteTimeSchedule String?  @map("favorite_time_schedule") @db.VarChar(20)
+  bankName             String?  @map("bank_name") @db.VarChar(100)
+  bankAccountType      String?  @map("bank_account_type") @db.VarChar(60)
+  bankAccountNumber    String?  @map("bank_account_number") @db.VarChar(60)
+  bankAccountRut       String?  @map("bank_account_rut") @db.VarChar(30)
+  bankAccountHolder    String?  @map("bank_account_holder") @db.VarChar(150)
+  bankPaymentEmail     String?  @map("bank_payment_email") @db.VarChar(150)
+  bankPaymentNotes     String?  @map("bank_payment_notes") @db.Text
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -250,4 +257,19 @@ model RoleMenuPermission {
   @@unique([role, menuKey])
   @@index([role, enabled])
   @@map("role_menu_permissions")
+}
+
+model StudioTimeSlot {
+  id        String   @id @default(uuid()) @db.VarChar(64)
+  period    String   @db.VarChar(5)
+  startTime String   @map("start_time") @db.VarChar(10)
+  endTime   String   @map("end_time") @db.VarChar(10)
+  label     String   @db.VarChar(120)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([period, isActive])
+  @@map("studio_time_slots")
 }
