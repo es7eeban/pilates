@@ -15,8 +15,22 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return health status with status ok and message', () => {
+      const result = appController.getRoot();
+      expect(result.status).toBe('ok');
+      expect(result.message).toBe('Pilates API is running');
+      expect(result.uptime).toBeDefined();
+      expect(result.timestamp).toBeDefined();
+    });
+  });
+
+  describe('health', () => {
+    it('should return health status for health checks', () => {
+      const result = appController.getHealth();
+      expect(result.status).toBe('ok');
+      expect(result.message).toBe('Pilates API is running');
+      expect(result.uptime).toBeDefined();
+      expect(result.timestamp).toBeDefined();
     });
   });
 });

@@ -17,7 +17,10 @@ async function bootstrap() {
   app.use('/uploads', express.static(uploadsPath));
   app.use(`/${prefix}/uploads`, express.static(uploadsPath));
 
-  app.setGlobalPrefix(prefix);
+  // Excluir la raíz y health checks del prefijo global para permitir pings de Render y UptimeRobot
+  app.setGlobalPrefix(prefix, {
+    exclude: ['/', 'health', `${prefix}/health`],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -57,6 +60,7 @@ async function bootstrap() {
 
   await app.listen(port);
   console.log(`🚀 Pilates Backend running at http://localhost:${port}/${prefix}`);
+  console.log(`💓 Health check running at http://localhost:${port}/ and http://localhost:${port}/health`);
   console.log(`📚 Swagger documentation at http://localhost:${port}/${prefix}/docs`);
 }
 
